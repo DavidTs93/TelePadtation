@@ -28,7 +28,7 @@ public class ConfigLoader {
 	}
 
 	private void makeConfig() {
-		String[] updateCheckerComment = {"Check if a new update was released (true/false)"};
+		String[] updateCheckerComment = {"update-checker - Check if a new update was released (true/false)"};
 		String[] baseLimitComment = {"base-limit - Base limit for amount of TelePads per player (Integer, minimum: 0)"};
 		String[] permLimitComment = {"perm-limit - Extra amount of TelePads per permission from the list below (Integer, Integer, minimum: 1)"};
 		String[] permsComment = {"permissions - List of permissions that add extra amount of TelePads per permission"};

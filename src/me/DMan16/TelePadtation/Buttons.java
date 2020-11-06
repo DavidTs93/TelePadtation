@@ -79,10 +79,12 @@ public class Buttons {
 			Player player = info.getFirst().player;
 			player.closeInventory();
 			Bukkit.getWorld(location.world).getBlockAt(location.x,location.y,location.z).setType(Material.AIR);
+			TelePad telePad = manager.get(location);
 			if (!player.getGameMode().equals(GameMode.CREATIVE)) {
-				ItemStack item = manager.get(location).toItem();
+				ItemStack item = telePad.toItem();
 				if (item != null) player.getInventory().addItem(item);
 			}
+			for (int i = 0; i < telePad.extra(); i++) player.getInventory().addItem(TelePad.fuel);
 			manager.remove(location);
 		};
 		return createButton(Material.BARRIER,"&c&lRemove",null,null,method);
@@ -95,21 +97,22 @@ public class Buttons {
 	static Button TelePad(TelePad telePadOrigin, Location destination) {
 		TelePad telePadDestination = manager.get(destination);
 		Consumer<Pair<Menu,Location>> method = (info) -> {
-			if (telePadDestination.canUse() && telePadOrigin.canUse()) telePadOrigin.use(destination,info.getFirst().player);
+			telePadOrigin.use(destination,info.getFirst().player);
 		};
 		String name = null;
 		if (telePadDestination.global()) name = manager.getGlobalName(destination);
 		if (name == null) name = "&bTele&6Pad";
-		return createButton(head,name,loreTelePad(destination),telePadDestination.canUse() ? heads.ACTIVE : heads.INACTIVE,method);
+		return createButton(head,name,loreTelePad(destination),telePadDestination.canUse() ? heads.ACTIVE : heads.INACTIVE,
+				telePadDestination.canUse() && telePadOrigin.canUse() ? method : null);
 	}
 
 	static Button TelePads(Location location) {
 		TelePad telePad = manager.get(location);
 		Consumer<Pair<Menu,Location>> method = (info) -> {
-			if (telePad.canUse()) info.getFirst().privateTelePads();;
+			info.getFirst().privateTelePads();
 		};
 		return createButton(telePad.canUse() ? Material.END_PORTAL_FRAME : Material.END_STONE,"&b&lTele&6Pad&b&ls",
-				Arrays.asList(telePad.canUse() ? "&a&oACTIVE" : "&c&oINACTIVE"),null,method);
+				Arrays.asList(telePad.canUse() ? "&a&oACTIVE" : "&c&oINACTIVE"),null,telePad.canUse() ? method : null);
 	}
 
 	static Button toggleGlobal(Location location) {

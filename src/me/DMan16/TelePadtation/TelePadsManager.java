@@ -133,10 +133,10 @@ public class TelePadsManager {
 							} catch (Exception e) {}
 						}
 					}
-					path = path.resolve(playerTelePads.getKey().toString());
-					Files.deleteIfExists(path);
+					Path playerPath = path.resolve(playerTelePads.getKey().toString());
+					Files.deleteIfExists(playerPath);
 					if (!arr.isEmpty()) {
-						Files.createFile(path, new FileAttribute[0]);
+						Files.createFile(playerPath, new FileAttribute[0]);
 						JsonElement je = jp.parse(arr.toJSONString());
 						String prettyJsonString = gson.toJson(je);
 						PrintWriter pw = new PrintWriter(pluginDir + "/" + worldName + "/" + playerTelePads.getKey());
@@ -216,5 +216,15 @@ public class TelePadsManager {
 	String getGlobalName(Location location) {
 		if (TelePadsGlobalNames.containsKey(location)) return TelePadsGlobalNames.get(location);
 		return null;
+	}
+	
+	public String toString() {
+		String str = "";
+		for (Entry<Location,TelePad> telePad : TelePads.entrySet()) {
+			Location loc = telePad.getKey();
+			TelePad pad = telePad.getValue();
+			str += loc.world + " " + "(" + loc.x + "," + loc.y + "," + loc.z + ") - " + pad.ownerID() + ", limit: " + pad.limit() + "\n";
+		}
+		return str;
 	}
 }

@@ -20,7 +20,7 @@ import org.bukkit.inventory.ItemStack;
 public class TelePadListener implements Listener {
 	private static TelePadsManager manager = TelePadtation.TelePadsManager;
 	
-	@EventHandler(ignoreCancelled = true)
+	@EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
 	void onPlaceEvent(BlockPlaceEvent event) {
 		org.bukkit.Location origin = event.getBlock().getLocation();
 		Location location = new Location(origin);
@@ -48,6 +48,7 @@ public class TelePadListener implements Listener {
 		} catch (Exception e) {}
 		int amount = manager.getPrivate(event.getPlayer().getUniqueId().toString()).size() + 1;
 		int limit = limit(event.getPlayer());
+		if (event.isCancelled()) return;
 		if (amount > limit) {
 			event.setCancelled(true);
 			Utils.chatColors(event.getPlayer(),"&bTele&6Pad &climit reached!");
@@ -84,7 +85,7 @@ public class TelePadListener implements Listener {
 				public void run() {
 					new Menu(event.getPlayer(),event.getClickedBlock().getLocation());
 				}
-			},3);
+			},4);
 	}
 	
 	@EventHandler(ignoreCancelled = true)
