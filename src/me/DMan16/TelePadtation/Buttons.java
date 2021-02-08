@@ -86,24 +86,29 @@ public class Buttons {
 			}
 			for (int i = 0; i < telePad.extra(); i++) player.getInventory().addItem(TelePad.fuel);
 			manager.remove(location);
+			Utils.chatLogPlugin(info.getFirst().player.getName() + Utils.chatColors(" &aremoved a &bTele&6Pad &alocated at: &f" + location));
 		};
 		return createButton(Material.BARRIER,"&c&lRemove",null,null,method);
 	}
 
 	static Button TelePad(Location origin, Location destination) {
-		return TelePad(manager.get(origin),destination);
+		return TelePad(origin,destination,false);
 	}
 
-	static Button TelePad(TelePad telePadOrigin, Location destination) {
+	static Button TelePad(Location origin, Location destination, boolean forceUse) {
+		return TelePad(manager.get(origin),destination,forceUse);
+	}
+
+	static Button TelePad(TelePad telePadOrigin, Location destination, boolean forceUse) {
 		TelePad telePadDestination = manager.get(destination);
 		Consumer<Pair<Menu,Location>> method = (info) -> {
-			telePadOrigin.use(destination,info.getFirst().player);
+			telePadOrigin.use(destination,info.getFirst().player,telePadDestination.global());
 		};
 		String name = null;
 		if (telePadDestination.global()) name = manager.getGlobalName(destination);
 		if (name == null) name = "&bTele&6Pad";
 		return createButton(head,name,loreTelePad(destination),telePadDestination.canUse() ? heads.ACTIVE : heads.INACTIVE,
-				telePadDestination.canUse() && telePadOrigin.canUse() ? method : null);
+				forceUse || (telePadDestination.canUse() && telePadOrigin.canUse()) ? method : null);
 	}
 
 	static Button TelePads(Location location) {
@@ -115,6 +120,13 @@ public class Buttons {
 				Arrays.asList(telePad.canUse() ? "&a&oACTIVE" : "&c&oINACTIVE"),null,telePad.canUse() ? method : null);
 	}
 
+	static Button special() {
+		Consumer<Pair<Menu,Location>> method = (info) -> {
+			info.getFirst().allTelePads();
+		};
+		return createButton(head,"&d&lAll &b&lTele&6Pad&b&ls",null,heads.ALL,method);
+	}
+
 	static Button toggleGlobal(Location location) {
 		TelePad telePad = manager.get(location);
 		Consumer<Pair<Menu,Location>> method = (info) -> {
@@ -123,9 +135,11 @@ public class Buttons {
 				if (telePad.global()) manager.TelePadsGlobal.add(location);
 				else manager.TelePadsGlobal.remove(location);
 				info.getFirst().button(1,-1,toggleGlobal(location));
+				Utils.chatLogPlugin(info.getFirst().player.getName() + Utils.chatColors(" &aconverted to " + (telePad.global() ? "&5global" : "&2private") +
+						" &aa &bTele&6Pad &alocated at: &f" + location));
 			}
 		};
-		return createButton(head,"&aGlobal Option",Arrays.asList("&bConvert to " + (telePad.global() ? "&4&oPrivate" : "&2&oGlobal") + " &bTele&6Pad"),
+		return createButton(head,"&aGlobal Option",Arrays.asList("&bConvert to " + (telePad.global() ? "&5&oPrivate" : "&2&oGlobal") + " &bTele&6Pad"),
 				telePad.global() ? null : heads.GLOBAL,method);
 	}
 
@@ -201,7 +215,8 @@ public class Buttons {
 		ACTIVE("eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNWNiN2MyMWNjNDNkYzE3Njc4ZWU2ZjE2NTkxZmZhYWIxZjYzN2MzN2Y0ZjZiYmQ4Y2VhNDk3NDUxZDc2ZGI2ZCJ9fX0="),
 		INACTIVE("eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvYjg4Y2ZhZmE1ZjAzZjhhZWYwNDJhMTQzNzk5ZTk2NDM0MmRmNzZiN2MxZWI0NjFmNjE4ZTM5OGY4NGE5OWE2MyJ9fX0="),
 		GLOBAL("eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNDM0NjdhNTMxOTc4ZDBiOGZkMjRmNTYyODVjNzI3MzRkODRmNWVjODhlMGI0N2M0OTMyMzM2Mjk3OWIzMjNhZiJ9fX0="),
-		POCKET("eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7ImlkIjoiMTkwM2NhNWE3MjgzNDExODk5NjMwYTY5OTM3MTY3NmMiLCJ0eXBlIjoiU0tJTiIsInVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMmM5MTVkYjNmYzQwYTc5YjYzYzJjNDUzZjBjNDkwOTgxZTUyMjdjNTAyNzUwMTI4MzI3MjEzODUzM2RlYTUxOSIsInByb2ZpbGVJZCI6IjgwMThhYjAwYjJhZTQ0Y2FhYzliZjYwZWY5MGY0NWU1IiwidGV4dHVyZUlkIjoiMmM5MTVkYjNmYzQwYTc5YjYzYzJjNDUzZjBjNDkwOTgxZTUyMjdjNTAyNzUwMTI4MzI3MjEzODUzM2RlYTUxOSJ9fSwic2tpbiI6eyJpZCI6IjE5MDNjYTVhNzI4MzQxMTg5OTYzMGE2OTkzNzE2NzZjIiwidHlwZSI6IlNLSU4iLCJ1cmwiOiJodHRwOi8vdGV4dHVyZXMubWluZWNyYWZ0Lm5ldC90ZXh0dXJlLzJjOTE1ZGIzZmM0MGE3OWI2M2MyYzQ1M2YwYzQ5MDk4MWU1MjI3YzUwMjc1MDEyODMyNzIxMzg1MzNkZWE1MTkiLCJwcm9maWxlSWQiOiI4MDE4YWIwMGIyYWU0NGNhYWM5YmY2MGVmOTBmNDVlNSIsInRleHR1cmVJZCI6IjJjOTE1ZGIzZmM0MGE3OWI2M2MyYzQ1M2YwYzQ5MDk4MWU1MjI3YzUwMjc1MDEyODMyNzIxMzg1MzNkZWE1MTkifSwiY2FwZSI6bnVsbH0=");
+		POCKET("eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7ImlkIjoiMTkwM2NhNWE3MjgzNDExODk5NjMwYTY5OTM3MTY3NmMiLCJ0eXBlIjoiU0tJTiIsInVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMmM5MTVkYjNmYzQwYTc5YjYzYzJjNDUzZjBjNDkwOTgxZTUyMjdjNTAyNzUwMTI4MzI3MjEzODUzM2RlYTUxOSIsInByb2ZpbGVJZCI6IjgwMThhYjAwYjJhZTQ0Y2FhYzliZjYwZWY5MGY0NWU1IiwidGV4dHVyZUlkIjoiMmM5MTVkYjNmYzQwYTc5YjYzYzJjNDUzZjBjNDkwOTgxZTUyMjdjNTAyNzUwMTI4MzI3MjEzODUzM2RlYTUxOSJ9fSwic2tpbiI6eyJpZCI6IjE5MDNjYTVhNzI4MzQxMTg5OTYzMGE2OTkzNzE2NzZjIiwidHlwZSI6IlNLSU4iLCJ1cmwiOiJodHRwOi8vdGV4dHVyZXMubWluZWNyYWZ0Lm5ldC90ZXh0dXJlLzJjOTE1ZGIzZmM0MGE3OWI2M2MyYzQ1M2YwYzQ5MDk4MWU1MjI3YzUwMjc1MDEyODMyNzIxMzg1MzNkZWE1MTkiLCJwcm9maWxlSWQiOiI4MDE4YWIwMGIyYWU0NGNhYWM5YmY2MGVmOTBmNDVlNSIsInRleHR1cmVJZCI6IjJjOTE1ZGIzZmM0MGE3OWI2M2MyYzQ1M2YwYzQ5MDk4MWU1MjI3YzUwMjc1MDEyODMyNzIxMzg1MzNkZWE1MTkifSwiY2FwZSI6bnVsbH0="),
+		ALL("eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvYWJkZDRjMmE0NjA3MDQzZWQ2YTg4NGVhMTU1NmIxNDkzYTA3NGE4ZTZlNmFjNjEwZDIyYjkzZTU4OGUxZjc4OSJ9fX0=");
 		
 		private final String skin;
 		

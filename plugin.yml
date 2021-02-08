@@ -1,5 +1,6 @@
 name: TelePadtation
 main: me.DMan16.TelePadtation.TelePadtation
+softdepend: [StarDirt]
 version: 1.1
 description: Teleportation with pads!
 author: DMan16

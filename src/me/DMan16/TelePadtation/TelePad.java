@@ -56,12 +56,12 @@ public class TelePad {
 		global = !global;
 	}
 	
-	void use(Location destination, Player player) {
-		if (!canUse()) return;
-		if (!global) used++;
+	void use(Location destination, Player player, boolean free) {
+		if (!canUse() && !Utils.special(player)) return;
+		if (!global && !free && !Utils.special(player)) used++;
 		for (World world : Bukkit.getWorlds()) {
 			if (world.getName().equals(destination.world)) {
-				player.teleport(new org.bukkit.Location(world,destination.x + 0.5,destination.y + 1,destination.z + 0.5));
+				player.teleport(new org.bukkit.Location(world,destination.x + 0.5,destination.y + 1.1,destination.z + 0.5));
 				break;
 			}
 		}

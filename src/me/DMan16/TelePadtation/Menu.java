@@ -32,6 +32,7 @@ public class Menu {
 	private int fill;
 	private int privateTelePads;
 	private int globalTelePads;
+	private int allTelePads;
 	final Location location;
 	
 	private Menu(Player player, Location location, int lines) {
@@ -83,7 +84,7 @@ public class Menu {
 	}
 	
 	boolean isGlobalTelePads() {
-		return (page >= globalTelePads);
+		return (page >= globalTelePads && page < allTelePads);
 	}
 	
 	void button(int loc, Button button) {
@@ -155,6 +156,10 @@ public class Menu {
 		setPage(globalTelePads);
 	}
 	
+	void allTelePads() {
+		setPage(allTelePads);
+	}
+	
 	private void createPages() {
 		pages = new HashMap<Integer,List<Button>>();
 		addPages(null);
@@ -165,6 +170,8 @@ public class Menu {
 		privateTelePads = addPages(getTelePads(manager.getPrivate(player.getUniqueId().toString())));
 		addPages(null);
 		globalTelePads = addPages(getTelePads(manager.TelePadsGlobal));
+		addPages(null);
+		allTelePads = addPages(getTelePads(manager.getAll(),true));
 	}
 	
 	private List<Button> createFill() {
@@ -175,12 +182,16 @@ public class Menu {
 		return buttons;
 	}
 	
-	private List<Button> getTelePads(List<Location> telePads) {
+	private List<Button> getTelePads(List<Location> telePads, boolean forceUse) {
 		List<Button> buttons = new ArrayList<Button>();
 		if (telePads != null) for (Location telePad : telePads) if (this.location == null || !telePad.equals(this.location))
-			buttons.add(this.location == null ? Buttons.TelePad(manager.TelePadsSingleUse.get(player.getUniqueId().toString()),telePad) :
-				Buttons.TelePad(this.location,telePad));
+			buttons.add(this.location == null ? Buttons.TelePad(manager.TelePadsSingleUse.get(player.getUniqueId().toString()),telePad,forceUse) :
+				Buttons.TelePad(this.location,telePad,forceUse));
 		return buttons;
+	}
+	
+	private List<Button> getTelePads(List<Location> telePads) {
+		return getTelePads(telePads,false);
 	}
 	
 	private int nextAddPage() {
@@ -273,41 +284,42 @@ public class Menu {
 	void update() {
 		TelePad telePad = location == null ? manager.TelePadsSingleUse.get(player.getUniqueId().toString()) : manager.get(location);
 		telePad.recharge();
-		if (pages != null) {
-			for (int i = 0; i < inv.getSize(); i++) {
-				button(i,Buttons.empty());
-			}
-			for (int i = 1; i <= 9; i++) {
-				button(1,i,Buttons.edge());
-				button(-1,i,Buttons.edge());
-			}
-			button(-1,5,Buttons.close());
-			if (page == main) {
-				PairInt TelePads = pairInt(3,5);
-				PairInt info = pairInt(3,-2);
-				if (telePad.global() && !telePad.ownerID().equals(player.getUniqueId().toString()) && !player.isOp()) {
-					TelePads = TelePads.add(0,-1);
-					info = info.add(0,1);
-				} else {
-					Button removeButton = Buttons.remove(location);
-					PairInt remove = pairInt(3,2);
-					button(remove,removeButton);
-				}
-				button(TelePads,Buttons.TelePads(location));
-				button(info,Buttons.info(location));
+		if (pages == null) return;
+		for (int i = 0; i < inv.getSize(); i++) {
+			button(i,Buttons.empty());
+		}
+		for (int i = 1; i <= 9; i++) {
+			button(1,i,Buttons.edge());
+			button(-1,i,Buttons.edge());
+		}
+		button(-1,5,Buttons.close());
+		if (page == main) {
+			PairInt TelePads = pairInt(3,5);
+			PairInt info = pairInt(3,-2);
+			PairInt special = pairInt(2,5);
+			if (telePad.global() && !telePad.ownerID().equals(player.getUniqueId().toString()) && !player.isOp()) {
+				TelePads = TelePads.add(0,-1);
+				info = info.add(0,1);
 			} else {
-				if (location != null) button(1,1,Buttons.back());
-				List<Button> current = pages.get(page) == null ? new ArrayList<Button>() : pages.get(page);
-				for (int i = 9 * edgeTop; i < inv.getSize() - (9 * edgeBot); i++) {
-					Button button = current.get(i - (9 * edgeTop));
-					if (page >= privateTelePads && button == null) button = Buttons.empty();
-					button(i,button);
-				}
-				if (isNext()) button(nextLoc,Buttons.next());
-				if (isPrev()) button(prevLoc,Buttons.previous());
-				if (isFill() && player.isOp()) button(1,-1,Buttons.toggleGlobal(location));
-				if (isPrivateTelePads() || isGlobalTelePads()) button(1,-1,Buttons.toggleTelePads(isPrivateTelePads()));
+				Button removeButton = Buttons.remove(location);
+				PairInt remove = pairInt(3,2);
+				button(remove,removeButton);
 			}
+			if (Utils.special(player)) button(special,Buttons.special());
+			button(TelePads,Buttons.TelePads(location));
+			button(info,Buttons.info(location));
+		} else {
+			if (location != null) button(1,1,Buttons.back());
+			List<Button> current = pages.get(page) == null ? new ArrayList<Button>() : pages.get(page);
+			for (int i = 9 * edgeTop; i < inv.getSize() - (9 * edgeBot); i++) {
+				Button button = current.get(i - (9 * edgeTop));
+				if (page >= privateTelePads && button == null) button = Buttons.empty();
+				button(i,button);
+			}
+			if (isNext()) button(nextLoc,Buttons.next());
+			if (isPrev()) button(prevLoc,Buttons.previous());
+			if (isFill() && player.isOp()) button(1,-1,Buttons.toggleGlobal(location));
+			if (isPrivateTelePads() || isGlobalTelePads()) button(1,-1,Buttons.toggleTelePads(isPrivateTelePads()));
 		}
 	}
 	

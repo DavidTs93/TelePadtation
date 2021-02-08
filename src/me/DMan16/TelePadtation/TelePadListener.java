@@ -1,6 +1,5 @@
 package me.DMan16.TelePadtation;
 
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Tag;
 import org.bukkit.block.Block;
@@ -22,6 +21,7 @@ public class TelePadListener implements Listener {
 	
 	@EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
 	void onPlaceEvent(BlockPlaceEvent event) {
+		if (event.isCancelled() || event.getItemInHand() == null || event.getItemInHand().getType() != Material.END_PORTAL_FRAME) return;
 		org.bukkit.Location origin = event.getBlock().getLocation();
 		Location location = new Location(origin);
 		if (checkTelePad(location) && !Tag.CARPETS.isTagged(event.getBlock().getType())) {
@@ -46,6 +46,7 @@ public class TelePadListener implements Listener {
 				return;
 			}
 		} catch (Exception e) {}
+		if (telePad.ownerID() == null) return;
 		int amount = manager.getPrivate(event.getPlayer().getUniqueId().toString()).size() + 1;
 		int limit = limit(event.getPlayer());
 		if (event.isCancelled()) return;
@@ -54,9 +55,14 @@ public class TelePadListener implements Listener {
 			Utils.chatColors(event.getPlayer(),"&bTele&6Pad &climit reached!");
 		} else {
 			manager.add(event.getPlayer().getUniqueId(),location,telePad);
-			if (manager.getPrivate(event.getPlayer().getUniqueId().toString()).size() == amount)
-				Utils.chatColors(event.getPlayer(),"&bTele&6Pad &ecreated! &e" + amount + "&e/&o&c" + limit);
-			else event.setCancelled(true);
+			if (manager.getPrivate(event.getPlayer().getUniqueId().toString()).size() == amount) {
+				Utils.chatColors(event.getPlayer(),"&bTele&6Pad &ecreated! &f" + amount + "&e/&c" + limit);
+				Utils.chatLogPlugin(event.getPlayer().getName() + Utils.chatColors(" &acreated a new &bTele&6Pad &aat: &f" + location));
+			}
+			else {
+				event.setCancelled(true);
+				Utils.chatColors(event.getPlayer(),"&bTele&6Pad &ecreated! &f" + amount + "&e/&c" + limit);
+			}
 		}
 	}
 	
@@ -79,13 +85,8 @@ public class TelePadListener implements Listener {
 		TelePad telePad = manager.get(event.getClickedBlock().getLocation());
 		if (telePad == null || event.getAction() != Action.RIGHT_CLICK_BLOCK || event.getPlayer().isSneaking()) return;
 		event.setCancelled(true);
-		if (telePad.ownerID().equals(event.getPlayer().getUniqueId().toString()) || telePad.global())
-			Bukkit.getServer().getScheduler().scheduleSyncDelayedTask(TelePadtation.getMain(), new Runnable() {
-				@Override
-				public void run() {
-					new Menu(event.getPlayer(),event.getClickedBlock().getLocation());
-				}
-			},4);
+		if (telePad.ownerID().equals(event.getPlayer().getUniqueId().toString()) || telePad.global() || Utils.special(event.getPlayer()))
+			new Menu(event.getPlayer(),event.getClickedBlock().getLocation());
 	}
 	
 	@EventHandler(ignoreCancelled = true)
@@ -109,7 +110,7 @@ public class TelePadListener implements Listener {
 	}
 	
 	private static boolean checkTelePad(Location location) {
-		return (manager.get(location.add(0,-1,0)) != null || manager.get(location.add(0,-2,0)) != null);
+		return (manager.get(location.add(0,0,0)) != null || manager.get(location.add(0,-1,0)) != null || manager.get(location.add(0,-2,0)) != null);
 	}
 	
 	public static boolean checkTelePad(org.bukkit.Location location) {

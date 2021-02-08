@@ -22,8 +22,9 @@ public class TelePadtation extends JavaPlugin {
 	public void onEnable() {
 		main = this;
 		String versionMC = Bukkit.getServer().getVersion().split("\\(MC:")[1].split("\\)")[0].trim().split(" ")[0].trim();
-		if (Double.parseDouble(versionMC.split("\\.",2)[0] + "." + versionMC.split("\\.",2)[1].replace(".","")) < 1.16) {
-			Utils.chatColorsLogPlugin("&cunsupported version! Please use version 1.16 or above.");
+		if (Integer.parseInt(versionMC.split("\\.")[0]) < 1 || Integer.parseInt(versionMC.split("\\.")[1]) < 16) {
+		//if (Double.parseDouble(versionMC.split("\\.",2)[0] + "." + versionMC.split("\\.",2)[1].replace(".","")) < 1.16) {
+			Utils.chatColorsLogPlugin("&cunsupported version! Please use version 1.16+.");
 			Bukkit.getPluginManager().disablePlugin(this);
 			return;
 		}
@@ -34,6 +35,7 @@ public class TelePadtation extends JavaPlugin {
 			Bukkit.getPluginManager().disablePlugin(this);
 			return;
 		}
+		TelePadsManager.fix();
 		config = new ConfigLoader();
 		if (config.getUpdateChecker()) {
 			new UpdateChecker(spigotID).getVersion(version -> {

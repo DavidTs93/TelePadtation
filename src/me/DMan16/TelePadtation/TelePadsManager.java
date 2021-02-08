@@ -1,8 +1,9 @@
 package me.DMan16.TelePadtation;
 
 import java.io.File;
-import java.io.FileReader;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
@@ -55,7 +56,7 @@ public class TelePadsManager {
 				if (path.isDirectory()) {
 					List<File> remove = new ArrayList<File>();
 					for (final File file : path.listFiles()) {
-						try (FileReader reader = new FileReader(file)) {
+						try (InputStreamReader reader = new InputStreamReader(new FileInputStream(pluginDir + "/" + path.getName() + "/" + file.getName()),"UTF-8")) {
 							List<Location> playerTelePads = new ArrayList<Location>();
 							Object obj = jsonParser.parse(reader);
 							JSONArray arr = (JSONArray) obj;
@@ -68,26 +69,27 @@ public class TelePadsManager {
 									int used = Integer.parseInt(((JSONObject) padInfo).get("used").toString());
 									int extra = Integer.parseInt(((JSONObject) padInfo).get("extra").toString());
 									boolean global = Boolean.parseBoolean(((JSONObject) padInfo).get("global").toString());
-									Block block = world.getBlockAt(x,y,z);
-									if (block != null && block.getType() == Material.END_PORTAL_FRAME) {
-										Location location = new Location(path.getName(),x,y,z);
-										TelePads.put(location, new TelePad(file.getName(),limit,used,extra,global));
-										playerTelePads.add(location);
-										if (global) {
-											String name = null;
-											try {
-												name = ((JSONObject) padInfo).get("name").toString();
-												if (Utils.chatColorsStrip(Utils.chatColors(name.trim().replace(" ",""))).isEmpty()) name = null;
-											} catch (Exception e) {}
-											TelePadsGlobal.add(location);
-											TelePadsGlobalNames.put(location,name);
-										}
+									Location location = new Location(path.getName(),x,y,z);
+									TelePads.put(location, new TelePad(file.getName().replace(".json",""),limit,used,extra,global));
+									playerTelePads.add(location);
+									if (global) {
+										String name = null;
+										try {
+											name = ((JSONObject) padInfo).get("name").toString();
+											if (Utils.chatColorsStrip(Utils.chatColors(name.trim().replace(" ",""))).isEmpty()) name = null;
+										} catch (Exception e) {}
+										TelePadsGlobal.add(location);
+										TelePadsGlobalNames.put(location,name);
 									}
-								} catch (Exception e) {}
+								} catch (Exception e) {
+									e.printStackTrace();
+								}
 							}
 							if (playerTelePads.isEmpty()) remove.add(file);
-							else TelePadsPlayer.put(file.getName(),playerTelePads);
-						} catch (Exception e) {}
+							else TelePadsPlayer.put(file.getName().replace(".json",""),playerTelePads);
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
 					}
 					for (File file : remove) file.delete();
 				}
@@ -133,13 +135,13 @@ public class TelePadsManager {
 							} catch (Exception e) {}
 						}
 					}
-					Path playerPath = path.resolve(playerTelePads.getKey().toString());
+					Path playerPath = path.resolve(playerTelePads.getKey() + ".json");
 					Files.deleteIfExists(playerPath);
 					if (!arr.isEmpty()) {
 						Files.createFile(playerPath, new FileAttribute[0]);
 						JsonElement je = jp.parse(arr.toJSONString());
 						String prettyJsonString = gson.toJson(je);
-						PrintWriter pw = new PrintWriter(pluginDir + "/" + worldName + "/" + playerTelePads.getKey());
+						PrintWriter pw = new PrintWriter(pluginDir + "/" + worldName + "/" + playerTelePads.getKey() + ".json");
 						pw.write(prettyJsonString);
 						pw.flush();
 						pw.close();
@@ -150,8 +152,10 @@ public class TelePadsManager {
 			}
 			remove.forEach(loc -> remove(loc));
 		} catch (Exception e) {
-			e.printStackTrace();
+			Utils.chatColorsLogPlugin("&cError saving &bTele&6Pad&bs &cin world &e" + world.getName() + "&c!");
 		}
+		if (Bukkit.getWorlds().get(Bukkit.getWorlds().size() - 1).getName().equals(worldName))
+			Utils.chatColorsLogPlugin("&aAll &bTele&6Pad&bs &ahave been saved!");
 	}
 	
 	void remove(org.bukkit.Location location) {
@@ -162,9 +166,13 @@ public class TelePadsManager {
 		TelePad telePad = get(location);
 		if (telePad == null) return;
 		TelePadsPlayer.get(telePad.ownerID()).remove(location);
-		if (TelePadsPlayer.get(telePad.ownerID()).isEmpty()) TelePadsPlayer.remove(telePad.ownerID());
 		TelePads.remove(location);
 		if (TelePadsGlobal.contains(location)) TelePadsGlobal.remove(location);
+		World world = null;
+		for (World world1 : Bukkit.getWorlds()) if (world1.getName().equals(location.world)) world = world1;
+		if (world == null) return;
+		Block block = world.getBlockAt(location.x,location.y,location.z);
+		if (block.getType() == Material.END_PORTAL_FRAME) block.setType(Material.AIR);
 	}
 	
 	void add(UUID playerID, Location location, TelePad telePad) {
@@ -185,11 +193,13 @@ public class TelePadsManager {
 	}
 	
 	TelePad get(Location location) {
+		if (location == null) return null;
 		if (TelePads.containsKey(location)) return TelePads.get(location);
 		return null;
 	}
 	
 	TelePad get(org.bukkit.Location location) {
+		if (location == null) return null;
 		return get(new Location(location));
 	}
 	
@@ -213,6 +223,12 @@ public class TelePadsManager {
 		return privateTelePads;
 	}
 	
+	List<Location> getAll() {
+		List<Location> allTelePads = new ArrayList<Location>();
+		for (Entry<String,List<Location>> telePads : TelePadsPlayer.entrySet()) for (Location telePad : telePads.getValue()) allTelePads.add(telePad);
+		return allTelePads;
+	}
+	
 	String getGlobalName(Location location) {
 		if (TelePadsGlobalNames.containsKey(location)) return TelePadsGlobalNames.get(location);
 		return null;
@@ -226,5 +242,24 @@ public class TelePadsManager {
 			str += loc.world + " " + "(" + loc.x + "," + loc.y + "," + loc.z + ") - " + pad.ownerID() + ", limit: " + pad.limit() + "\n";
 		}
 		return str;
+	}
+	
+	public void fix() {
+		List<Location> remove = new ArrayList<Location>();
+		for (Location loc : TelePads.keySet()) {
+			World world = null;
+			for (World world1 : Bukkit.getWorlds()) if (world1.getName().equals(loc.world)) world = world1;
+			if (world == null) remove.add(loc);
+			else {
+				Block block = world.getBlockAt(loc.x,loc.y,loc.z);
+				if (block != null && block.getType() != Material.END_PORTAL_FRAME) {
+					Location location = new Location(block.getLocation());
+					if ((get(location.add(0,-1,0)) != null && !remove.contains(location.add(0,-1,0))) ||
+							(get(location.add(0,-2,0)) != null && !remove.contains(location.add(0,-2,0)))) remove.add(loc);
+					else block.setType(Material.END_PORTAL_FRAME);
+				}
+			}
+		}
+		for (Location loc : remove) remove(loc);
 	}
 }

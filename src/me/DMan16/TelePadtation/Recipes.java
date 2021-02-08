@@ -29,9 +29,9 @@ public class Recipes implements Listener {
 	Recipes() {
 		recipes = new ArrayList<ShapedRecipe>();
 		recipes.add(recipeTelePad1());
-		recipes.add(recipeTelePad2_1());
+		recipes.add(recipeTelePad2());
 		recipes.add(recipeTelePad2_2());
-		recipes.add(recipeTelePad3_1());
+		recipes.add(recipeTelePad3());
 		recipes.add(recipeTelePad3_2());
 		recipes.add(recipePocketTelePad());
 		for (ShapedRecipe recipe : recipes) Bukkit.addRecipe(recipe);
@@ -45,6 +45,12 @@ public class Recipes implements Listener {
 			}
 		}
 		this.compass = compass;
+		if (Bukkit.getServer().getPluginManager().getPlugin("StarDirt") != null) {
+			me.DMan16.StarDirt.Recipes.Recipes.newRecipes.add(recipeTelePad1());
+			me.DMan16.StarDirt.Recipes.Recipes.newRecipes.add(recipeTelePad2());
+			me.DMan16.StarDirt.Recipes.Recipes.newRecipes.add(recipeTelePad3());
+			me.DMan16.StarDirt.Recipes.Recipes.newRecipes.add(recipePocketTelePad());
+		}
 	}
 	
 	static ItemStack get(int limit) {
@@ -67,7 +73,7 @@ public class Recipes implements Listener {
 	
 	static ShapedRecipe recipeTelePad1() {
 		ItemStack item = TelePad(TelePad.maxUses.get(0));
-    	NamespacedKey key = Utils.namespacedKey("telepad1");
+    	NamespacedKey key = Utils.namespacedKey("telepad_1");
     	ShapedRecipe recipe = new ShapedRecipe(key,item);
     	recipe.setGroup("telepad1");
 		recipe.shape("ECE","SSS");
@@ -77,9 +83,9 @@ public class Recipes implements Listener {
 		return recipe;
 	}
 	
-	static ShapedRecipe recipeTelePad2_1() {
+	static ShapedRecipe recipeTelePad2() {
 		ItemStack item = TelePad(TelePad.maxUses.get(1));
-    	NamespacedKey key = Utils.namespacedKey("telepad2_1");
+    	NamespacedKey key = Utils.namespacedKey("telepad_2");
     	ShapedRecipe recipe = new ShapedRecipe(key,item);
     	recipe.setGroup("telepad2");
 		recipe.shape("YCY","ESE","QQQ");
@@ -93,7 +99,7 @@ public class Recipes implements Listener {
 	
 	static ShapedRecipe recipeTelePad2_2() {
 		ItemStack item = TelePad(TelePad.maxUses.get(1));
-    	NamespacedKey key = Utils.namespacedKey("telepad2_2");
+    	NamespacedKey key = Utils.namespacedKey("telepad_2_2");
     	ShapedRecipe recipe = new ShapedRecipe(key,item);
     	recipe.setGroup("telepad2");
 		recipe.shape("YTY","QQQ");
@@ -103,9 +109,9 @@ public class Recipes implements Listener {
 		return recipe;
 	}
 	
-	static ShapedRecipe recipeTelePad3_1() {
+	static ShapedRecipe recipeTelePad3() {
 		ItemStack item = TelePad(TelePad.maxUses.get(2));
-    	NamespacedKey key = Utils.namespacedKey("telepad3_1");
+    	NamespacedKey key = Utils.namespacedKey("telepad_3");
     	ShapedRecipe recipe = new ShapedRecipe(key,item);
     	recipe.setGroup("telepad3");
 		recipe.shape("YYY","BNB","BBB");
@@ -117,7 +123,7 @@ public class Recipes implements Listener {
 	
 	static ShapedRecipe recipeTelePad3_2() {
 		ItemStack item = TelePad(TelePad.maxUses.get(2));
-    	NamespacedKey key = Utils.namespacedKey("telepad3_2");
+    	NamespacedKey key = Utils.namespacedKey("telepad_3_2");
     	ShapedRecipe recipe = new ShapedRecipe(key,item);
     	recipe.setGroup("telepad3");
 		recipe.shape(" N ","BTB","BBB");
@@ -129,7 +135,7 @@ public class Recipes implements Listener {
 	
 	static ShapedRecipe recipePocketTelePad() {
 		ItemStack item = Buttons.pocketTelePad().item();
-    	NamespacedKey key = Utils.namespacedKey("telepadpocket");
+    	NamespacedKey key = Utils.namespacedKey("telepad_pocket");
     	ShapedRecipe recipe = new ShapedRecipe(key,item);
 		recipe.shape("B","E");
 		recipe.setIngredient('B', new RecipeChoice.MaterialChoice(Tag.BUTTONS));
@@ -152,12 +158,12 @@ public class Recipes implements Listener {
 		if (!(event.getRecipe() instanceof ShapedRecipe)) return;
 		Player player = (Player) event.getWhoClicked();
 		if ((((ShapedRecipe) event.getRecipe()).getKey()).equals(recipeTelePad1().getKey())) {
-			discover(recipeTelePad2_1(),player);
+			discover(recipeTelePad2(),player);
 			discover(recipeTelePad2_2(),player);
 			discover(recipePocketTelePad(),player);
-		} else if ((((ShapedRecipe) event.getRecipe()).getKey()).equals(recipeTelePad2_1().getKey()) ||
+		} else if ((((ShapedRecipe) event.getRecipe()).getKey()).equals(recipeTelePad2().getKey()) ||
 				(((ShapedRecipe) event.getRecipe()).getKey()).equals(recipeTelePad2_2().getKey())) {
-			discover(recipeTelePad3_1(),player);
+			discover(recipeTelePad3(),player);
 			discover(recipeTelePad3_2(),player);
 		}
 	}

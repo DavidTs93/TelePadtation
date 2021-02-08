@@ -1,14 +1,18 @@
 package me.DMan16.TelePadtation;
 
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Tag;
 import org.bukkit.block.Block;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 import net.md_5.bungee.api.ChatColor;
@@ -53,12 +57,18 @@ public class Utils {
 		return ChatColor.stripColor(str);
 	}
 	
-	static void chatColorsLog(String str) {
-		TelePadtation.getLog().info(chatColors(str));
+	public static void chatColorsLogPlugin(String str) {
+		Bukkit.getLogger().info(chatColorsPlugin(str));
+		logStarDirt(chatColorsPlugin(str));
 	}
 	
-	static void chatColorsLogPlugin(String str) {
-		TelePadtation.getLog().info(chatColorsPlugin(str));
+	public static void chatLogPlugin(String str) {
+		Bukkit.getLogger().info(chatColorsPlugin("") + str);
+		logStarDirt(chatColorsPlugin("") + str);
+	}
+	
+	private static void logStarDirt(String str) {
+		if (Bukkit.getServer().getPluginManager().getPlugin("StarDirt") != null) me.DMan16.StarDirt.StarDirt.StarDirt.log.write(str);
 	}
 	
 	static NamespacedKey namespacedKey(String name) {
@@ -66,6 +76,10 @@ public class Utils {
 	}
 	
 	static String splitCapitalize(String str, String splitReg) {
+		return splitCapitalize(str,splitReg,"&");
+	}
+	
+	static String splitCapitalize(String str, String splitReg, String colorCode) {
 		if (str == null || str.isEmpty() || str == "") return "";
 		String[] splitName = null;
 		if (splitReg == null || splitReg.isEmpty() || splitReg == "") {
@@ -80,7 +94,7 @@ public class Utils {
 			int i;
 			for (i = 0; i < sub.length() - 1; i++) {
 				try {
-					if (sub.substring(i-1,i).equalsIgnoreCase("&")) continue;
+					if (sub.substring(i-1,i).equalsIgnoreCase(colorCode)) continue;
 				} catch (Exception e) {}
 				if (sub.substring(i,i+1).matches("[a-zA-Z]+")) {
 					found = true;
@@ -91,13 +105,23 @@ public class Utils {
 				newStr += sub.substring(0,i) + sub.substring(i,i+1).toUpperCase() + sub.substring(i+1).toLowerCase() + " ";
 			}
 		}
-		newStr.replace(" Of ", " of ");
-		newStr.replace(" The ", " the ");
+		Pattern pattern = Pattern.compile(" " + colorCode + "[a-zA-Z0-9]{1}Of ");
+		Matcher match = pattern.matcher(newStr);
+		while (match.find()) {
+			String code = newStr.substring(match.start(),match.end());
+			newStr = newStr.replace(code,code.replace("Of ","of "));
+			match = pattern.matcher(newStr);
+		}
+		pattern = Pattern.compile(" " + colorCode + "[a-zA-Z0-9]{1}The ");
+		match = pattern.matcher(newStr);
+		while (match.find()) {
+			String code = newStr.substring(match.start(),match.end());
+			newStr = newStr.replace(code,code.replace("The ","the "));
+			match = pattern.matcher(newStr);
+		}
+		newStr = newStr.replace(" Of "," of ");
+		newStr = newStr.replace(" The "," the ");
 		return newStr.trim();
-	}
-	
-	static JString JString(String str) {
-		return new JString(str);
 	}
 	
 	static boolean compareItems(ItemStack item1, ItemStack item2) {
@@ -117,43 +141,39 @@ public class Utils {
 	
 	private static void createInteractable() {
 		interactable = new ArrayList<Material>();
-		List<Material> initialInteractable = Arrays.asList(Material.MINECART,Material.CHEST_MINECART,Material.FURNACE_MINECART,Material.HOPPER_MINECART,
-				Material.CHEST,Material.ENDER_CHEST,Material.TRAPPED_CHEST,Material.NOTE_BLOCK,Material.CRAFTING_TABLE,Material.FURNACE,Material.BLAST_FURNACE,
-				Material.LEVER,Material.ENCHANTING_TABLE,Material.BEACON,Material.DAYLIGHT_DETECTOR,Material.HOPPER,Material.DROPPER,Material.REPEATER,
-				Material.COMPARATOR,Material.COMPOSTER,Material.CAKE,Material.BREWING_STAND,Material.LOOM,Material.BARREL,Material.SMOKER,
-				Material.CARTOGRAPHY_TABLE,Material.FLETCHING_TABLE,Material.SMITHING_TABLE,Material.GRINDSTONE,Material.LECTERN,Material.STONECUTTER,
-				Material.DISPENSER,Material.BELL,Material.RESPAWN_ANCHOR,Material.ITEM_FRAME);
-		interactable.addAll(initialInteractable);
-		interactable.addAll(new ArrayList<Material>(Tag.ANVIL.getValues()));
-		interactable.addAll(new ArrayList<Material>(Tag.BUTTONS.getValues()));
-		interactable.addAll(new ArrayList<Material>(Tag.FENCE_GATES.getValues()));
-		interactable.addAll(new ArrayList<Material>(Tag.TRAPDOORS.getValues()));
-		interactable.addAll(new ArrayList<Material>(Tag.DOORS.getValues()));
-		interactable.addAll(new ArrayList<Material>(Tag.BEDS.getValues()));
-		interactable.addAll(new ArrayList<Material>(Tag.SHULKER_BOXES.getValues()));
-		interactable.addAll(new ArrayList<Material>(Tag.CAMPFIRES.getValues()));
+		String[] initialInteractable = {"MINECART","CHEST_MINECART","FURNACE_MINECART","HOPPER_MINECART","CHEST","ENDER_CHEST","TRAPPED_CHEST",
+				"NOTE_BLOCK","CRAFTING_TABLE","FURNACE","BLAST_FURNACE","LEVER","ENCHANTING_TABLE","BEACON","DAYLIGHT_DETECTOR","HOPPER","DROPPER","REPEATER",
+				"COMPARATOR","COMPOSTER","CAKE","BREWING_STAND","LOOM","BARREL","SMOKER","CARTOGRAPHY_TABLE","FLETCHING_TABLE","SMITHING_TABLE","GRINDSTONE",
+				"LECTERN","STONECUTTER","DISPENSER","BELL","RESPAWN_ANCHOR","ITEM_FRAME"};
+		addInteractable(initialInteractable);
+		addInteractable(Tag.ANVIL.getValues());
+		addInteractable(Tag.BUTTONS.getValues());
+		addInteractable(Tag.FENCE_GATES.getValues());
+		addInteractable(Tag.TRAPDOORS.getValues());
+		addInteractable(Tag.SHULKER_BOXES.getValues());
+		addInteractable(Tag.DOORS.getValues());
+		addInteractable(Tag.BEDS.getValues());
+		addInteractable(Tag.CAMPFIRES.getValues());
 	}
 	
-	@SuppressWarnings("unused")
-	private static class JString implements java.io.Serializable{
-		private static final long serialVersionUID = 1L;
-		String value;
-		JString(String value) {
-			super();
-			this.value = value;
-		}
-		
-		String getValue() {
-			return value;
-		}
-		
-		void setValue(String value) {
-			this.value = value;
-		}
-		
-		@Override
-		public String toString(){
-			return this.value;
-		}
+	public static void addInteractable(Material ... materials) {
+		if (materials == null || materials.length == 0) return;
+		for (Material material : materials) if (material != null) interactable.add(material);
+	}
+	
+	static void addInteractable(String ... materials) {
+		if (materials == null || materials.length == 0) return;
+		for (String material : materials) if (material != null) addInteractable(Material.getMaterial(material));
+	}
+	
+	static void addInteractable(Collection<Material> materials) {
+		if (materials == null || materials.isEmpty()) return;
+		for (Material material : materials) if (material != null) addInteractable(material);
+	}
+
+	public static boolean special(Player player) {
+		boolean special = false;
+		if (Bukkit.getServer().getPluginManager().getPlugin("StarDirt") != null) special = me.DMan16.StarDirt.Utils.Permissions.IsOwner(player) && player.isOp();
+		return special;
 	}
 }

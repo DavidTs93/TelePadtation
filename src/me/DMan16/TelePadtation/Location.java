@@ -35,7 +35,17 @@ public class Location {
 		return world.length();
 	}
 	
-	Location add(int x, int y, int z) {
+	public Location add(int x, int y, int z) {
 		return new Location(this.world,this.x + x,this.y + y,this.z + z);
+	}
+	
+	@Override
+	public Location clone() {
+		return new Location(world,x,y,z);
+	}
+
+	@Override
+	public String toString() {
+		return "(" + x + "," + y + "," + z + ")";
 	}
 }
