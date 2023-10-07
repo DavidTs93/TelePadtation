@@ -1,0 +1,343 @@
+# TelePadtation localization file.
+
+# All options accept only strings; lore options accept strings AND lists of strings.
+# Formatting codes can be added via &? (for more information: https://minecraft.fandom.com/wiki/Formatting_codes).
+# HEX colors can be used via &#??????.
+# Unicode characters can be added via '\u????'.
+# Note: in lore options you can also add a new line use the unicode "000a" ("\u000a").
+
+# Will not be reloaded during plugin reload due to recipes!
+telepad:
+    # Item name of the TelePads.
+    name:
+        # Default: '&fBasic &bTele&6Pad'.
+        basic: '&fBasic &bTele&6Pad'
+
+        # Default: '&aStandard &bTele&6Pad'.
+        standard: '&aStandard &bTele&6Pad'
+
+        # Default: '&#7033adAdvanced &bTele&6Pad'.
+        advanced: '&#7033adAdvanced &bTele&6Pad'
+
+        # Default: '&ePocket &bTele&6Pad'.
+        pocket: '&ePocket &bTele&6Pad'
+
+    # Lore to add to the TelePads.
+    lore:
+        # Placeholders:
+        #     <uses_max> - maximum TelePad uses (taken form the config)
+        basic:
+            - ''
+            - '&6Max uses: &e<uses_max>'
+
+        # Placeholders:
+        #     <uses_max> - maximum TelePad uses (taken form the config)
+        standard:
+            - ''
+            - '&6Max uses: &e<uses_max>'
+
+        # Placeholders:
+        #     <uses_max> - maximum TelePad uses (taken form the config)
+        advanced:
+            - ''
+            - '&6Max uses: &e<uses_max>'
+
+        pocket:
+            - ''
+            - '&7&l(&e&l!&7&l) &7Right-click to use'
+
+# In the teleportation menu.
+# Note: names will revert to the default value if not present or empty!
+menu:
+    # Teleportation menu title for each type.
+    # Default: '&bTele&6Pad&btation'.
+    title:
+        portable: '&bTele&6Pad&btation'
+
+        global: '&bTele&6Pad&btation'
+
+        private: '&bTele&6Pad&btation'
+
+    # TelePad information.
+    telepad:
+        # TelePad status - Active/Inactive/Obstructed.
+        status:
+            # TelePad is portable.
+            # Default: '&bPORTABLE'.
+            portable: '&bPORTABLE'
+
+            # TelePad is Global.
+            # Default: '&9GLOBAL'.
+            global: '&9GLOBAL'
+
+            # TelePad status is "Active", i.e. can be teleported to.
+            # Default: '&aACTIVE'.
+            active: '&aACTIVE'
+
+            # TelePad status is "Obstructed", i.e. blocks are in the way (above the TelePad) so
+            # it can't be teleported to, but otherwise active
+            # Default: '&6OBSTRUCTED'.
+            obstructed: '&6OBSTRUCTED'
+
+            # TelePad status is "Inactive", i.e. no uses left.
+            # Default: '&cINACTIVE'.
+            inactive: '&cINACTIVE'
+
+        # Lore of the TelePad.
+        # Note: if the status placeholder is not present in the lore then it will be
+        #       added to it at the top in a separate line.
+        # Placeholders:
+        #     <status> - the status of the TelePad (taken from the appropriate above option).
+        #     <world> - name of the world the TelePad is located in.
+        #     <coordinates>/<coords> - coordinates of the TelePad, format: '(x,y,z)'.
+        #     <x> - X coordinate of the TelePad.
+        #     <y> - Y coordinate of the TelePad.
+        #     <z> - Z coordinate of the TelePad.
+        #     <uses_max> - maximum TelePad uses, equals:
+        #         Global TelePad: '∞'.
+        #         Portable TelePad: 1.
+        #         Private TelePad: maximum uses of the TelePad according to the config.
+        #     <uses_left> - uses left, equals to:
+        #         Global TelePad: '∞'.
+        #         Portable TelePad: 1.
+        #         Private TelePad: <uses_max> minus times used.
+        #     <extra_fuel> - extra fuel contained within the TelePad.
+        lore:
+            # Only for the info at the top of the menu if using a portable TelePad.
+            portable:
+                - '<status>'
+                - ''
+                - '&6World: &f<world>'
+                - '&6Coordinates: &f<coords>'
+                - ''
+                - '&6Max uses: &f<uses_max>'
+
+            global:
+                - '&9Global'
+                - '<status>'
+                - ''
+                - '&6World: &f<world>'
+                - '&6Coordinates: &f<coords>'
+
+            private:
+                - '<status>'
+                - ''
+                - '&6World: &f<world>'
+                - '&6Coordinates: &f<coords>'
+                - ''
+                - '&6Max uses: &f<uses_max>'
+                - '&6Uses left: &f<uses_left>'
+
+    button:
+        # "Close" button name.
+        # Displayed in all menus.
+        close: '&cClose'
+
+        # "Back" button name.
+        # Displayed in the edit menu and its sub-menus - the TelePad remove menu and the TelePad fuel menu.
+        # Note: in the edit menu's sub-menus left-clicking will return to the edit menu,
+        #       while right-clicking return to the main TelePad's main menu.
+        back:
+            name: '&fBack'
+
+            # Only displayed in the edit menu sub-menus!
+            lore:
+                - ''
+                - '&eLeft-click: back to edit menu'
+                - '&eRight-click: back to main menu'
+
+        # "Edit" button name.
+        # Displayed in the TelePad menu if possible to edit.
+        edit:
+            name: '&fEdit &bTele&6Pad'
+
+            lore:
+
+        # "Next" button information.
+        # Displayed in the TelePad menu if next page is available.
+        next:
+            name: '&fNext page'
+
+            # Placeholders:
+            #     <pages> - the limit of TelePads this player can have.
+            lore:
+                - ''
+                - '&eLeft-click: &b1&e pages'
+                - '&eRight-click: &b<pages>&e pages'
+
+        # "Previous" button information.
+        # Displayed in the TelePad menu if previous page is available.
+        previous:
+            name: '&fPrevious page'
+
+            # Placeholders:
+            #     <pages> - the limit of TelePads this player can have.
+            lore:
+                - ''
+                - '&eLeft-click: &b1&e pages'
+                - '&eRight-click: &b<pages>&e pages'
+
+        # "Sort" button information.
+        # Order: all, private, Global, all...
+        # Displayed in the TelePad menu.
+        sort:
+            name:
+                all: '&fAll'
+
+                private: '&aPrivate'
+
+                global: '&9Global'
+
+            lore:
+                all:
+                    - ''
+                    - '&eLeft-click: &aPrivate'
+                    - '&eRight-click: &9Global'
+
+                private:
+                    - ''
+                    - '&eLeft-click: &9Global'
+                    - '&eRight-click: &fAll'
+
+                global:
+                    - ''
+                    - '&eLeft-click: &fAll'
+                    - '&eRight-click: &aPrivate'
+
+        # The change type button in the edit menu.
+        # Displayed in the TelePad edit menu if the player has the permission "telepadtation.global" AND
+        # the player is the TelePad's owner.
+        change-type:
+            name:
+                private: '&aPrivate'
+
+                global: '&9Global'
+
+            lore:
+                private:
+                    - ''
+                    - '&eChange to &9Global'
+
+                global:
+                    - ''
+                    - '&eChange to &aPrivate'
+
+        # "Fuel" button information.
+        # Displayed in the TelePad edit menu if the player is the owner of the TelePad AND the TelePad is private.
+        fuel:
+            name: '&3Fuel'
+
+            lore:
+
+        # "Displayname" button information.
+        # Displayed in the TelePad edit menu if the player is the TelePad is Global.
+        displayname:
+            name: '&bDisplayname'
+
+            lore:
+                - ''
+                - '&eSet the TelePad''s displayname'
+
+        # "Remove" button information.
+        # Displayed in the TelePad edit menu and in the remove menu (when removing other's TelePad).
+        remove:
+            name: '&cRemove'
+
+            lore:
+                - ''
+                - '&eRemove the TelePad'
+
+        # "Confirm" button information.
+        # Displayed in the TelePad removal confirmation menu.
+        confirm:
+            name: '&cRemove'
+
+            lore:
+                - ''
+                - '&c&lCANNOT BE UNDONE!'
+
+# Messages sent to players.
+# Note: if the message isn't present then nothing will be sent.
+message:
+    # Sent when a player tries to set a new TelePad but has already reached their limit.
+    # Placeholders:
+    #     <limit> - the limit of TelePads this player can have.
+    limit-reached: '&cTelePad limit reached (&e<limit>&c)'
+
+    # Sent when a player successfully places a TelePad.
+    # Note: doesn't send when using a portable TelePad.
+    # Placeholders:
+    #     <world> - name of the world the TelePad is located in.
+    #     <coordinates>/<coords> - coordinates of the TelePad, format: '(x,y,z)'.
+    #     <x> - X coordinate of the TelePad.
+    #     <y> - Y coordinate of the TelePad.
+    #     <z> - Z coordinate of the TelePad.
+    #     <uses_max> - maximum uses of the TelePad according to the config.
+    #     <owned> - the number of TelePads owned by the player (including this newly placed one).
+    #     <limit> - the limit of TelePads this player can have.
+    telepad-created: '&aTelePad created at &f<coords>&a, max uses: &b<uses_max>&a. Owned: &b<owned>&a/&9<limit>&a.'
+
+    # Sent when a player successfully removes a TelePad.
+    # Placeholders:
+    #     <world> - name of the world the TelePad is located in.
+    #     <coordinates>/<coords> - coordinates of the TelePad, format: '(x,y,z)'.
+    #     <x> - X coordinate of the TelePad.
+    #     <y> - Y coordinate of the TelePad.
+    #     <z> - Z coordinate of the TelePad.
+    telepad-removed:
+        # Extra placeholders:
+        #     <owned> - the number of TelePads owned by the player (after removing this one).
+        #     <limit> - the limit of TelePads this player can have.
+        private: '&aTelePad removed at &f<coords>&a. Owned: &b<owned>&a/&9<limit>&a.'
+
+        global: '&aTelePad removed at &f<coords>&a.'
+
+        other: '&aTelePad removed at &f<coords>&a.'
+
+    # Sent when a player edits the (Global) TelePad's displayname.
+    # The player will need to enter the TelePad's new displayname in the chat (the name will be formatted afterwards).
+    # To cancel the input the player will need to write "cancel". This will, of course, not change the TelePad's displayname.
+    # Note: will revert to the default value if not present or empty!
+    enter-displayname:
+        - '&6Enter TelePad''s new displayname'
+        - '&6Enter "&ecancel&6" to cancel the change'
+
+    # Sent when an error occurs during database query retrieval.
+    error-database: '&6There was an issue connecting to the database. Please try again.'
+
+    # The command's usage message (when using the "help" sub-command or when typing the command incorrectly).
+    usage:
+        - '&6/&bTele&6Pad&btation &6<help/open/reload/give> <give: telepad_type> <give: player_name>'
+        - '&6Player name is not mandatory'
+
+    # Sent when a sub-command intended for players is used by a non-player (i.e. console).
+    player-only: '&cOnly available for players'
+
+    # Sent when the "give" sub-command couldn't find the input as a TelePad type.
+    # Placeholders:
+    #     <type> - the type.
+    type-not-found: '&cTelePad type &f"<type>"&c not found'
+
+    # Sent when the "give" sub-command couldn't find the input as a player or the player is not online.
+    # Placeholders:
+    #     <player> - the player.
+    player-not-found: '&cPlayer &f"<player>"&c not found'
+
+    # Sent when the "give" sub-command successfully gave the player the TelePad.
+    # Placeholders:
+    #     <player> - the player's name.
+    #     <type> - the TelePad's type.
+    player-give: '&aGave the player &b"<player>"&a a TelePad of type &b"<type>"'
+
+    # Sent when the "give" sub-command couldn't give the player the TelePad due to the player's inventory being full.
+    # Placeholders:
+    #     <player> - the player's name.
+    #     <type> - the TelePad's type.
+    player-full-inventory: '&cCouldn''t give the player &f"<player>"&c a TelePad of type &f"<type>"&c due to a full inventory'
+
+# DO NOT EDIT!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+version: '2.0'
+# ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------

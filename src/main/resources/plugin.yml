@@ -1,0 +1,26 @@
+name: TelePadtation
+main: me.DMan16.TelePadtation.TelePadtationMain
+version: 2.0
+softdepend: [PlaceholderAPI]
+description: Teleportation with pads!
+author: DMan16
+api-version: 1.16
+
+commands:
+  TelePadtation:
+    aliases: [tpt]
+    description: TelePadtation command
+    permission: telepadtation.command
+permissions:
+  telepadtation.create:
+    default: true
+    description: Allow players to create placeable TelePads.
+  telepadtation.command:
+    default: op
+    description: Allow players to run the TelePadtation command.
+  telepadtation.global:
+    default: op
+    description: Allow players to edit Global TelePads; this includes turning placed TelePads to Global ones and vice versa.
+  telepadtation.remove:
+    default: op
+    description: Allow players to remove TelePads not owned by them (excluding Global TelePads).

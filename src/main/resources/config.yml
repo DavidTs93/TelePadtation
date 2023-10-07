@@ -1,0 +1,195 @@
+# TelePadtation config file.
+
+# Database connection information.
+# Will not be reloaded during plugin reload!
+# Note: if the connection to a remote database fails then it will default to a local database.
+database:
+    # The host address for the database.
+    # Default: 'local'.
+    # Note: non-local database must be a SQL database!
+    host: 'local'
+
+    # The table name saved in the database.
+    # Default: 'TelePadtation'.
+    # Spaces will be turned to underscore! (underscore = _).
+    table: 'TelePadtation'
+
+    # Maximum size of the connection pool - integer, minimum: 1.
+    # Default: 20.
+    maximum-pool-size: 20
+
+    # Connection timeout: maximum time in milliseconds (ms) before terminating a connection - integer, minimum: 250.
+    # Default: 5000 (= 5 seconds).
+    connection-timeout: 5000
+
+    # The SQL information to connect to the database.
+    # Unnecessary if using a local database.
+    SQL:
+        # The database port to use. 0 or less for no port.
+        # Default: 3306.
+        port: 3306
+
+        # The name of the database to store the data in.
+        database: ''
+
+        # Credentials for the database.
+        username: ''
+        password: ''
+
+# Whether to check for a newer version of the plugin.
+# If a newer version is found a message will be sent to the logger.
+update-checker: true
+
+# Whether to report anonymous usage statistics to https://bStats.org.
+# All reported information can be found here: https://bstats.org/plugin/bukkit/TelePadtation.
+metrics: true
+
+# Options regarding TelePads.
+telepad:
+    # Whether to run a fix TelePads during loading from the database and block placement.
+    # Default: true.
+    # If true, it will check:
+    #   1) Each TelePad in all the worlds during the world's load (during server load as well).
+    #   2) When a block is placed if a TelePad is present at that block.
+    # and if an End Portal Frame isn't located at the TelePad's location it will force-place one there.
+    fix: true
+
+    # Note: if the option above (fix) is disabled and this option is enable then when an End Portal Frame
+    #       isn't located at the TelePad's location it will instead remove the record from the database.
+    remove-broken: true
+
+    # The Pocket TelePad is a player head with a skin. Use this option to set the skin's value.
+    # Will not be reloaded during plugin reload due to recipes!
+    # If the skin string is incorrect (encoding-wise) then it will default to the default skin.
+    # Heads can be taken from sites like: https://minecraft-heads.com (take the "Value" from "Other").
+    # Note: you can use End Portal Frame instead of a player head with a skin by leaving the skin empty ('').
+    # Default: 'eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMmM5MTVkYjNmYzQwYTc5YjYzYzJjNDUzZjBjNDkwOTgxZTUyMjdjNTAyNzUwMTI4MzI3MjEzODUzM2RlYTUxOSJ9fX0=',
+    # can be viewed here: https://minecraft-heads.com/custom-heads/decoration/36295-nether-portal.
+    display-head-pocket: 'eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMmM5MTVkYjNmYzQwYTc5YjYzYzJjNDUzZjBjNDkwOTgxZTUyMjdjNTAyNzUwMTI4MzI3MjEzODUzM2RlYTUxOSJ9fX0='
+
+    # Per-player limit of TelePad owning.
+    # Default: 2.
+    # Note: Global and Portable TelePads do not count towards the limit.
+    limit:
+        # Base limit - integer, minimum: 0.
+        base: 2
+
+        # Extra limit per permission from the list below - integer, minimum: 1.
+        # Default: 1.
+        per-permission: 1
+
+        # Permissions that give extra limit (leave empty for no extra limit).
+        permissions:
+            - telepadtation.extra.a
+            - telepadtation.extra.b
+            - telepadtation.extra.c
+            - telepadtation.extra.d
+
+    # How many uses does the TelePad get before needing to be recharged - integer.
+    # Portable TelePads are only single-use.
+    uses:
+        # Minimum: 1.
+        # Default: 4.
+        basic: 4
+
+        # Minimum: basic + 1.
+        # Default: basic x 2.
+        standard: 8
+
+        # Minimum: standard + 1.
+        # Default: standard x 2.
+        advanced: 16
+
+    # Usage rules about the destination TelePad.
+    # Note: a base requirement for teleporting to a TelePad is the 2 blocks above it to be empty (air);
+    #       a carpet right above the TelePad is allowed and doesn't count as an obstruction.
+    destination:
+        # Whether a use should be consumed on the destination TelePad.
+        # Default: false.
+        # Note: if this option is active and the destination has no uses left then it can't be teleported to.
+        consume-use: false
+
+        # Whether teleportation to a TelePad with no uses is possible.
+        # Default: false.
+        # Note: if this option is active then a TelePad without uses can be teleported to,
+        #       unless the option above ('consume-use') is active as well.
+        allow-inactive: false
+
+    # Options about the TelePad fuel, Ender Pearls.
+    # Each TelePad can hold up to 80 extra fuel, Ender Pearls, which are given to the player upon removal;
+    # if the player doesn't have enough room for all of them then the leftovers will fall to the ground.
+    # Note: Global TelePads will not drop their extra fuel upon removal!
+    fuel:
+        # Allow only "pure" fuel, i.e. non-altered Ender Pearls as fuel.
+        # If set to false then renamed Ender Pearls will be allowed as fuel,
+        # otherwise only completely "vanilla" Ender Pearls will be accepted as fuel.
+        # Default: false.
+        pure: false
+
+        # How many uses each fuel, Ender Pearl, adds (extra uses aren't kept) - integer, minimum: 1.
+        # Default: 1000.
+        uses:
+            basic: 1000
+
+            standard: 1000
+
+            advanced: 1000
+
+# Options regarding the teleportation menu.
+menu:
+    # Whether to use the TelePad's name as the title instead of the default title (from messages.yml) if present.
+    # Works only for Global TelePads.
+    name-as-title: true
+
+    # How many pages to jump when the next/previous button is right-clicked.
+    right-click-jump: 5
+
+    # Each TelePad in the menu will be displayed as a head with the corresponding skin.
+    # If the skin string is incorrect (encoding-wise) then it will default to the default skin.
+    # Heads can be taken from sites like: https://minecraft-heads.com (take the "Value" from "Other").
+    display-head:
+        # The player head for the edit button in the TelePad's menu.
+        # Default: 'eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvZTRkNDliYWU5NWM3OTBjM2IxZmY1YjJmMDEwNTJhNzE0ZDYxODU0ODFkNWIxYzg1OTMwYjNmOTlkMjMyMTY3NCJ9fX0=',
+        # can be viewed here: https://minecraft-heads.com/custom-heads/miscellaneous/27523-settings.
+        edit: 'eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvZTRkNDliYWU5NWM3OTBjM2IxZmY1YjJmMDEwNTJhNzE0ZDYxODU0ODFkNWIxYzg1OTMwYjNmOTlkMjMyMTY3NCJ9fX0='
+
+        # The player heads for the sorting options and TelePad's type in the edit menu.
+        # Sort:
+        #     Order: all, private, Global, all...
+        #     Left-click for next option, right-click for previous option.
+        #     Note: the "All" option is always an End Portal Frame.
+        general:
+            # Default: 'eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNWNiN2MyMWNjNDNkYzE3Njc4ZWU2ZjE2NTkxZmZhYWIxZjYzN2MzN2Y0ZjZiYmQ4Y2VhNDk3NDUxZDc2ZGI2ZCJ9fX0=',
+            # can be viewed here: https://minecraft-heads.com/custom-heads/decoration/116-ender-pearl.
+            private: 'eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNWNiN2MyMWNjNDNkYzE3Njc4ZWU2ZjE2NTkxZmZhYWIxZjYzN2MzN2Y0ZjZiYmQ4Y2VhNDk3NDUxZDc2ZGI2ZCJ9fX0='
+
+            # Default: 'eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNDM0NjdhNTMxOTc4ZDBiOGZkMjRmNTYyODVjNzI3MzRkODRmNWVjODhlMGI0N2M0OTMyMzM2Mjk3OWIzMjNhZiJ9fX0=',
+            # can be viewed here: https://minecraft-heads.com/custom-heads/decoration/23202-globe.
+            global: 'eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNDM0NjdhNTMxOTc4ZDBiOGZkMjRmNTYyODVjNzI3MzRkODRmNWVjODhlMGI0N2M0OTMyMzM2Mjk3OWIzMjNhZiJ9fX0='
+
+        # The player heads each individual TelePad depending on their type.
+        # Note: you can use End Portal Frame instead of a player head with a skin by leaving the skin empty ('').
+        individual:
+            # Default: 'eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNDM0NjdhNTMxOTc4ZDBiOGZkMjRmNTYyODVjNzI3MzRkODRmNWVjODhlMGI0N2M0OTMyMzM2Mjk3OWIzMjNhZiJ9fX0=',
+            # can be viewed here: https://minecraft-heads.com/custom-heads/decoration/23202-globe.
+            global: 'eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNDM0NjdhNTMxOTc4ZDBiOGZkMjRmNTYyODVjNzI3MzRkODRmNWVjODhlMGI0N2M0OTMyMzM2Mjk3OWIzMjNhZiJ9fX0='
+
+            private:
+                # Default: 'eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNWNiN2MyMWNjNDNkYzE3Njc4ZWU2ZjE2NTkxZmZhYWIxZjYzN2MzN2Y0ZjZiYmQ4Y2VhNDk3NDUxZDc2ZGI2ZCJ9fX0=',
+                # can be viewed here: https://minecraft-heads.com/custom-heads/decoration/116-ender-pearl.
+                active: 'eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNWNiN2MyMWNjNDNkYzE3Njc4ZWU2ZjE2NTkxZmZhYWIxZjYzN2MzN2Y0ZjZiYmQ4Y2VhNDk3NDUxZDc2ZGI2ZCJ9fX0='
+
+                # Default: 'eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvOTJjMmY2ZmE3ZWM1MzA0MzVjNDMxNTcyOTM4YjlmZWI5NTljNDIyOThlNTU1NDM0MDI2M2M2NTI3MSJ9fX0=',
+                # can be viewed here: https://minecraft-heads.com/custom-heads/decoration/1159-ender-pearl-red.
+                obstructed: 'eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvOTJjMmY2ZmE3ZWM1MzA0MzVjNDMxNTcyOTM4YjlmZWI5NTljNDIyOThlNTU1NDM0MDI2M2M2NTI3MSJ9fX0='
+
+                # Default: 'eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvYjg4Y2ZhZmE1ZjAzZjhhZWYwNDJhMTQzNzk5ZTk2NDM0MmRmNzZiN2MxZWI0NjFmNjE4ZTM5OGY4NGE5OWE2MyJ9fX0=',
+                # can be viewed here: https://minecraft-heads.com/custom-heads/decoration/3937-pearl.
+                inactive: 'eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNjdlNmFkNGI3OGJkMzUxODdhNjU3MDg5OTE4MTdlMjY2OTlmOTAyYzc3MzhjODFjMzc1ODU5ZDcyNzUzOSJ9fX0='
+
+# DO NOT EDIT!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+version: '2.0'
+# ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
