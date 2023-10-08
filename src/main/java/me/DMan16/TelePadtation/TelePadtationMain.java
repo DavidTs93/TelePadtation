@@ -2,22 +2,20 @@ package me.DMan16.TelePadtation;
 
 import co.aikar.taskchain.BukkitTaskChainFactory;
 import co.aikar.taskchain.TaskChainFactory;
+import me.DMan16.TelePadtation.Database.DatabaseConnection;
+import me.DMan16.TelePadtation.Database.LocalDatabase;
+import me.DMan16.TelePadtation.Database.SQLDatabase;
 import me.DMan16.TelePadtation.Listeners.RecipesListener;
 import me.DMan16.TelePadtation.Listeners.TelePadListener;
 import me.DMan16.TelePadtation.Listeners.TelePadtationCommandListener;
 import me.DMan16.TelePadtation.Managers.ConfigManager;
-import me.DMan16.TelePadtation.Managers.Database.DatabaseConnection;
-import me.DMan16.TelePadtation.Managers.Database.LocalDatabase;
-import me.DMan16.TelePadtation.Managers.Database.SQLDatabase;
 import me.DMan16.TelePadtation.Managers.LanguageManager;
 import me.DMan16.TelePadtation.Managers.RecipesManager;
 import me.DMan16.TelePadtation.Managers.TelePadsManager;
-import me.DMan16.TelePadtation.Utils.Utils;
 import org.bstats.bukkit.Metrics;
 import org.bukkit.Bukkit;
 import org.bukkit.event.HandlerList;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -115,13 +113,11 @@ public class TelePadtationMain extends JavaPlugin {
 				new TelePadListener();
 				new RecipesListener();
 				new TelePadtationCommandListener();
-				new BukkitRunnable() {
-					public void run() {
-						if (Bukkit.getWorlds().isEmpty()) return;
-						cancel();
-						Bukkit.getWorlds().forEach(databaseConnection()::loadWorld);
-					}
-				}.runTaskTimer(this,20 * 5,20 * 5);
+				taskChainFactory.newChain().delay(20 * 4).syncFirst(() -> {
+					if (Bukkit.getWorlds().isEmpty()) return false;
+					Bukkit.getWorlds().forEach(databaseConnection()::fixWorld);
+					return true;
+				}).abortIf(Utils::self).delay(20 * 4).sync(() -> Bukkit.getWorlds().forEach(databaseConnection()::fixWorld)).execute();
 			} catch (IOException e) {
 				Utils.chatColorsLogPlugin("&cError accessing files!");
 				throw e;
@@ -139,8 +135,8 @@ public class TelePadtationMain extends JavaPlugin {
 	public void onDisable() {
 		Bukkit.getScheduler().cancelTasks(this);
 		HandlerList.unregisterAll(this);
-		databaseConnection().close();
-		recipesManager().removeRecipes();
+		Utils.runNotNull(databaseConnection,DatabaseConnection::close);
+		Utils.runNotNull(recipesManager,RecipesManager::removeRecipes);
 		Utils.chatColorsLogPlugin("&aDisabled successfully!");
 	}
 	

@@ -1,7 +1,7 @@
-package me.DMan16.TelePadtation.Managers.Database;
+package me.DMan16.TelePadtation.Database;
 
 import com.zaxxer.hikari.HikariConfig;
-import me.DMan16.TelePadtation.Utils.Utils;
+import me.DMan16.TelePadtation.Utils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -46,7 +46,7 @@ public final class SQLDatabase extends DatabaseConnection {
 				"          AND Z = NEW.Z" +
 				"    ) THEN" +
 				"        SIGNAL SQLSTATE '45000'" +
-				"        SET MESSAGE_TEXT = 'Insertion failed: nearby TelePads detected';" +
+				"        SET MESSAGE_TEXT = '" + ERROR_MESSAGE + "';" +
 				"    END IF;" +
 				" END;";
 	}

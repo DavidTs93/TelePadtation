@@ -10,17 +10,27 @@ commands:
   TelePadtation:
     aliases: [tpt]
     description: TelePadtation command
-    permission: telepadtation.command
+    permission: telepadtation.command.basic
 permissions:
   telepadtation.create:
     default: true
     description: Allow players to create placeable TelePads.
-  telepadtation.command:
-    default: op
-    description: Allow players to run the TelePadtation command.
   telepadtation.global:
     default: op
     description: Allow players to edit Global TelePads; this includes turning placed TelePads to Global ones and vice versa.
   telepadtation.remove:
     default: op
     description: Allow players to remove TelePads not owned by them (excluding Global TelePads).
+  telepadtation.command.basic:
+    default: true
+    description: Allow players to run the basic TelePadtation command (self owned and limit information).
+  telepadtation.command.*:
+    default: false
+    description: Allow players to run the full TelePadtation command.
+    children:
+      telepadtation.command.basic: true
+  telepadtation.command:
+    description: Allow players to run the full TelePadtation command.
+    default: op
+    children:
+      telepadtation.command.*: true

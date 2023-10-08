@@ -7,7 +7,8 @@ import me.DMan16.TelePadtation.Interfaces.Listener;
 import me.DMan16.TelePadtation.TelePadItems.TelePadItem;
 import me.DMan16.TelePadtation.TelePads.TelePad;
 import me.DMan16.TelePadtation.TelePadtationMain;
-import me.DMan16.TelePadtation.Utils.Utils;
+import me.DMan16.TelePadtation.Utils;
+import org.bukkit.GameMode;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -54,18 +55,28 @@ public final class TelePadListener implements Listener {
 		}
 		TelePad.TelePadPlaceable telePad = itemTelePad.createTelePad(player,location);
 		if (!Utils.callEventCancellable(new TelePadPrePlaceEvent(telePad,player))) return;
-		ItemStack clone = item.clone();
-		clone.setAmount(1);
-		if (item.getAmount() > 1) item.setAmount(item.getAmount() - 1);
-		else item = null;
-		player.getInventory().setItem(event.getHand(),item);
+		Runnable add;
+		if (player.getGameMode() == GameMode.CREATIVE) add = null;
+		else {
+			if (item.getAmount() > 1) {
+				ItemStack clone = item.clone();
+				clone.setAmount(clone.getAmount() - 1);
+				player.getInventory().setItem(event.getHand(),clone);
+			} else player.getInventory().setItem(event.getHand(),null);
+			ItemStack clone = item.clone();
+			clone.setAmount(1);
+			add = () -> Utils.givePlayer(player,player.getWorld(),player.getLocation(),clone);
+		}
 		TelePadtationMain.databaseConnection().add(telePad,() -> {
 			TelePadtationMain.languageManager().telePadCreated(player,telePad,owned + 1,limit);
 			block.setType(TelePad.MATERIAL_BLOCK);
 			Utils.callEvent(new TelePadPostPlaceEvent(telePad,player));
 		},() -> {
+			TelePadtationMain.languageManager().nearbyError(player);
+			Utils.runNotNull(add);
+		},() -> {
 			TelePadtationMain.languageManager().errorDatabase(player);
-			player.getInventory().addItem(clone);
+			Utils.runNotNull(add);
 		});
 	}
 	
@@ -76,7 +87,7 @@ public final class TelePadListener implements Listener {
 	
 	@EventHandler
 	public void onWorldLoad(WorldLoadEvent event) {
-		TelePadtationMain.databaseConnection().loadWorld(event.getWorld());
+		TelePadtationMain.databaseConnection().fixWorld(event.getWorld());
 	}
 	
 	@EventHandler(priority = EventPriority.HIGHEST,ignoreCancelled = true)
@@ -90,30 +101,32 @@ public final class TelePadListener implements Listener {
 		} else {
 			Block block = event.getClickedBlock();
 			if (block == null) return;
+			TelePad.TelePadPlaceable telePad = null;
 			try {
-				TelePad.TelePadPlaceable telePad = getTelePad(new BlockLocation(block));
-				if (telePad == null) return;
-				event.setCancelled(true);
-				telePad.access(player,event.getHand());
+				telePad = getTelePad(new BlockLocation(block));
 			} catch (SQLException e) {
 				event.setCancelled(true);
 				e.printStackTrace();
 				TelePadtationMain.languageManager().errorDatabase(player);
 			}
+			if (telePad == null) return;
+			event.setCancelled(true);
+			telePad.access(player,event.getHand());
 		}
 	}
 	
 	@EventHandler(priority = EventPriority.HIGHEST,ignoreCancelled = true)
 	public void onBlockBreak(BlockBreakEvent event) {
+		TelePad.TelePadPlaceable telePad = null;
 		try {
-			TelePad.TelePadPlaceable telePad = getTelePad(new BlockLocation(event.getBlock()));
-			if (telePad == null) return;
-			event.setCancelled(true);
-			TelePadtationMain.configManager().fixOrOk(event.getBlock(),telePad,null,null);
+			telePad = getTelePad(new BlockLocation(event.getBlock()));
 		} catch (SQLException e) {
 			event.setCancelled(true);
 			e.printStackTrace();
 			TelePadtationMain.languageManager().errorDatabase(event.getPlayer());
 		}
+		if (telePad == null) return;
+		event.setCancelled(true);
+		TelePadtationMain.configManager().fixOrOk(event.getBlock(),telePad,null,null);
 	}
 }

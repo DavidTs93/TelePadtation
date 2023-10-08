@@ -9,7 +9,7 @@ import me.DMan16.TelePadtation.TelePads.TelePadBasic;
 import me.DMan16.TelePadtation.TelePads.TelePadPocket;
 import me.DMan16.TelePadtation.TelePads.TelePadStandard;
 import me.DMan16.TelePadtation.TelePadtationMain;
-import me.DMan16.TelePadtation.Utils.Utils;
+import me.DMan16.TelePadtation.Utils;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;

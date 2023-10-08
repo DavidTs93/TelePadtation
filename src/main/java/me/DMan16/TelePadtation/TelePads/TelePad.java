@@ -9,8 +9,9 @@ import me.DMan16.TelePadtation.Menus.TelePadMenuPlaced;
 import me.DMan16.TelePadtation.Menus.TelePadMenuPortable;
 import me.DMan16.TelePadtation.TelePadItems.TelePadItem;
 import me.DMan16.TelePadtation.TelePadtationMain;
-import me.DMan16.TelePadtation.Utils.Utils;
+import me.DMan16.TelePadtation.Utils;
 import net.md_5.bungee.api.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Tag;
 import org.bukkit.block.Block;
@@ -167,7 +168,10 @@ public abstract class TelePad {
 			recharge(onSuccess,onFail);
 			return;
 		}
-		if (extraFuel() == 0) return;
+		if (extraFuel() == 0) {
+			Utils.runNotNull(onFail);
+			return;
+		}
 		int newExtraFuel = extraFuel();
 		int newUsed = used();
 		int fuelUses = fuelUses();
@@ -186,7 +190,9 @@ public abstract class TelePad {
 		return !isGlobal();
 	}
 	
-	protected abstract boolean isFree();
+	public abstract boolean isPortable();
+	
+	public abstract boolean isFree();
 	
 	protected void setGlobal(boolean isGlobal) {
 		this.isGlobal = isGlobal;
@@ -205,7 +211,7 @@ public abstract class TelePad {
 	
 	@Nullable
 	public final String name() {
-		return name;
+		return Utils.chatColors(name);
 	}
 	
 	protected final void name(@Nullable String name) {
@@ -213,7 +219,7 @@ public abstract class TelePad {
 	}
 	
 	protected void setNameDatabase(@Nullable String name,@Nullable Runnable onSuccess,@Nullable Runnable onFail) {
-		String newName = Utils.isNullOrEmpty(name) || Utils.isNullOrEmpty(ChatColor.stripColor(name)) ? null : name;
+		String newName = Utils.isNullOrEmpty(name) || Utils.isNullOrEmpty(ChatColor.stripColor(Utils.chatColors(name))) ? null : name;
 		TelePadtationMain.databaseConnection().setName(this,newName,() -> {
 			name(newName);
 			Utils.runNotNull(onSuccess);
@@ -256,11 +262,18 @@ public abstract class TelePad {
 		return testTeleportTo() ? TelePadStatus.ACTIVE : TelePadStatus.OBSTRUCTED;
 	}
 	
+	boolean teleportPlayer(@NotNull Player player,@NotNull Location location) {
+		return player.teleport(location);
+	}
+	
 	public <V extends TelePad> void teleport(@NotNull V destination,@NotNull Player player) {
 		boolean destinationConsumeUse = TelePadtationMain.configManager().destinationConsumeUse();
 		if (!isActive() || !destination.isActive() || !destination.testTeleportTo(destinationConsumeUse,TelePadtationMain.configManager().destinationAllowInactive())) return;
 		if (!Utils.callEventCancellable(new TelePadPreTeleportEvent<>(this,destination,player))) return;
-		if (!player.teleport(destination.location().toLocation().add(0.5,1.1,0.5))) return;
+		Location playerLoc = player.getLocation(),loc = destination.location().toLocation().add(0.5,1.1,0.5);
+		loc.setYaw(playerLoc.getYaw());
+		loc.setPitch(playerLoc.getPitch());
+		if (!teleportPlayer(player,loc)) return;
 		Runnable run = () -> Utils.callEvent(new TelePadPostTeleportEvent<>(this,destination,player));
 		if (!isFree()) usedDatabase(used() + 1,() -> {
 			recharge();
@@ -275,11 +288,6 @@ public abstract class TelePad {
 	}
 	
 	public abstract void access(@NotNull Player player,@NotNull EquipmentSlot hand);
-	
-	@Override
-	public boolean equals(Object obj) {
-		return (obj instanceof TelePad) && location().equals(((TelePad) obj).location());
-	}
 	
 	@Override
 	public int hashCode() {
@@ -305,7 +313,11 @@ public abstract class TelePad {
 			return !isGlobal() && player.hasPermission(PERMISSION_REMOVE_PRIVATE);
 		}
 		
-		protected boolean isFree() {
+		public final boolean isPortable() {
+			return false;
+		}
+		
+		public boolean isFree() {
 			return isGlobal();
 		}
 		
@@ -314,11 +326,16 @@ public abstract class TelePad {
 				TelePadStatus status = status();
 				if (canAccess(player)) {
 					if (status == TelePadStatus.OBSTRUCTED) new TelePadMenuPlaced(this,player,status,null);
-					else recharge(() -> TelePadtationMain.databaseConnection().getApplicableTelePads(player,telePads -> new TelePadMenuPlaced(this,player,status,telePads),() -> TelePadtationMain.languageManager().errorDatabase(player)),() -> new TelePadMenuPlaced(this,player,status,null));
+					else recharge(() -> TelePadtationMain.databaseConnection().getApplicableTelePads(player,telePads -> new TelePadMenuPlaced(this,player,status(),telePads),() -> TelePadtationMain.languageManager().errorDatabase(player)),() -> new TelePadMenuPlaced(this,player,status,null));
 				} else if (canAccessRemove(player)) try {
-					new TelePadMenuEdit(this,TelePadtationMain.languageManager().titleMenu(this,status),player,status,null,null);
+					new TelePadMenuEdit(this,TelePadtationMain.languageManager().titleMenu(this),player,status,null,null);
 				} catch (IllegalAccessException e) {}
 			},null);
+		}
+		
+		@Override
+		public boolean equals(Object obj) {
+			return (obj instanceof TelePadPlaceable) && location().equals(((TelePadPlaceable) obj).location());
 		}
 	}
 	
@@ -328,8 +345,9 @@ public abstract class TelePad {
 		}
 		
 		public final void access(@NotNull Player player,@NotNull EquipmentSlot hand) {
-			ItemStack item = consumeBeforeOpen(player,hand);
-			if (item != null) TelePadtationMain.databaseConnection().getApplicableTelePads(player,telePads -> new TelePadMenuPortable(this,player,() -> addAfterClose(player,item),telePads),() -> TelePadtationMain.languageManager().errorDatabase(player));
+//			ItemStack item = consumeBeforeOpen(player,hand);
+//			if (item != null)
+			TelePadtationMain.databaseConnection().getApplicableTelePads(player,telePads -> new TelePadMenuPortable(this,player,telePads),() -> TelePadtationMain.languageManager().errorDatabase(player));
 		}
 		
 		public abstract @NotNull String skin();
@@ -346,7 +364,11 @@ public abstract class TelePad {
 			return false;
 		}
 		
-		protected final boolean isFree() {
+		public final boolean isPortable() {
+			return true;
+		}
+		
+		public final boolean isFree() {
 			return true;
 		}
 		
@@ -368,27 +390,25 @@ public abstract class TelePad {
 		@Override
 		protected final void setNameDatabase(@Nullable String name,@Nullable Runnable onSuccess,@Nullable Runnable onFail) {}
 		
-		@Nullable
-		protected ItemStack consumeBeforeOpen(@NotNull Player player,@NotNull EquipmentSlot hand) {
-			ItemStack item = player.getInventory().getItem(hand);
-			TelePadItem.TelePadItemPortable<?> itemTelePad = TelePadtationMain.TelePadsManager().getPortable(item);
-			if (itemTelePad != null && itemTelePad.createTelePad(player,new BlockLocation(player.getWorld(),0,0,0)).getClass().equals(this.getClass())) {
-				ItemStack clone = item.clone();
-				clone.setAmount(1);
-				if (item.getAmount() == 1) item = null;
-				else item.setAmount(item.getAmount() - 1);
-				player.getInventory().setItem(hand,item);
-				return clone;
-			} else {
-				itemTelePad = TelePadtationMain.TelePadsManager().getPortable(type());
-				if (itemTelePad == null) return null;
-				item = itemTelePad.toItem();
-				return player.getInventory().removeItem(item).isEmpty() ? item : null;
-			}
+		@Override
+		boolean teleportPlayer(@NotNull Player player,@NotNull Location location) {
+			TelePadItem.TelePadItemPortable<?> itemTelePad = TelePadtationMain.TelePadsManager().getPortable(type());
+			if (itemTelePad == null) return player.teleport(location);
+			ItemStack item = itemTelePad.toItem();
+			if (!player.getInventory().removeItem(item).isEmpty()) return false;
+			if (player.teleport(location)) return true;
+			Utils.givePlayer(player,player.getWorld(),player.getLocation(),item);
+			return false;
 		}
+
+//		() -> addAfterClose(player,item)
+//		protected void addAfterClose(@NotNull Player player,@Nullable ItemStack item) {
+//			if (Utils.notNull(item)) player.getInventory().addItem(item);
+//		}
 		
-		protected void addAfterClose(@NotNull Player player,@Nullable ItemStack item) {
-			if (Utils.notNull(item)) player.getInventory().addItem(item);
+		@Override
+		public boolean equals(Object obj) {
+			return false;
 		}
 	}
 }

@@ -1,4 +1,4 @@
-package me.DMan16.TelePadtation.Managers.Database;
+package me.DMan16.TelePadtation.Database;
 
 import com.zaxxer.hikari.HikariConfig;
 import me.DMan16.TelePadtation.TelePadtationMain;
@@ -50,7 +50,7 @@ public final class LocalDatabase extends DatabaseConnection {
 		return "CREATE TRIGGER " + TRIGGER_NAME +
 				" BEFORE INSERT ON " + table +
 				" BEGIN" +
-				"    SELECT RAISE(FAIL, 'Insertion failed: nearby TelePads detected')" +
+				"    SELECT RAISE(FAIL, '" + ERROR_MESSAGE + "')" +
 				"    WHERE EXISTS (" +
 				"        SELECT 1" +
 				"        FROM " + table +

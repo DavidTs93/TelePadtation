@@ -113,7 +113,6 @@ menu:
                 - '&6Max uses: &f<uses_max>'
 
             global:
-                - '&9Global'
                 - '<status>'
                 - ''
                 - '&6World: &f<world>'
@@ -264,6 +263,9 @@ message:
     #     <limit> - the limit of TelePads this player can have.
     limit-reached: '&cTelePad limit reached (&e<limit>&c)'
 
+    # Sent when a player tries to set a new TelePad but there is already one in the 2 blocks below it and/or above it.
+    nearby-error: '&cTelePads must be placed at least 2 blocks apart vertically'
+
     # Sent when a player successfully places a TelePad.
     # Note: doesn't send when using a portable TelePad.
     # Placeholders:
@@ -297,18 +299,19 @@ message:
     # Sent when a player edits the (Global) TelePad's displayname.
     # The player will need to enter the TelePad's new displayname in the chat (the name will be formatted afterwards).
     # To cancel the input the player will need to write "cancel". This will, of course, not change the TelePad's displayname.
+    # To remove the displayname any formatting code can be used (like "&a" or "&l&1&r").
+    # "&" can be displayed using its unicode "\u0026".
     # Note: will revert to the default value if not present or empty!
     enter-displayname:
         - '&6Enter TelePad''s new displayname'
         - '&6Enter "&ecancel&6" to cancel the change'
+        - '&6Enter only a formatting code (like "\u0026a" or "\u0026l\u00261\u0026r") to remove the displayname'
 
     # Sent when an error occurs during database query retrieval.
     error-database: '&6There was an issue connecting to the database. Please try again.'
 
     # The command's usage message (when using the "help" sub-command or when typing the command incorrectly).
-    usage:
-        - '&6/&bTele&6Pad&btation &6<help/open/reload/give> <give: telepad_type> <give: player_name>'
-        - '&6Player name is not mandatory'
+    usage: '&6/&bTele&6Pad&btation &6<help/open/reload/give> <give: telepad_type> <give: player_name> (no player = give yourself)'
 
     # Sent when a sub-command intended for players is used by a non-player (i.e. console).
     player-only: '&cOnly available for players'
@@ -334,6 +337,21 @@ message:
     #     <player> - the player's name.
     #     <type> - the TelePad's type.
     player-full-inventory: '&cCouldn''t give the player &f"<player>"&c a TelePad of type &f"<type>"&c due to a full inventory'
+
+    # Sent when the "owned" sub-command is used.
+    # When the command is used without a sub-command it will call the "owned" sub-command on the player running the command.
+    # Placeholders:
+    #     <owned> - the number of TelePads owned by the player.
+    #     <limit> - the limit of TelePads this player can have.
+    # Note: will revert to the default value if not present or empty!
+    owned-limit:
+        # Sent when the "owned" sub-command is used or the player running the command.
+        self: '&aTelePads owned: &b<owned>&a. TelePads limit: &9<limit>&a. &b<owned>&a/&9<limit>&a.'
+
+        # Sent when the "owned" sub-command is used on a different player.
+        # Extra placeholders:
+        #     <player> - the player's name.
+        other: '&aTelePads owned for "&f<player>&a": &b<owned>&a. TelePads limit: &9<limit>&a. &b<owned>&a/&9<limit>&a.'
 
 # DO NOT EDIT!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------

@@ -6,7 +6,7 @@ import me.DMan16.TelePadtation.TelePadItems.TelePadItemBasic;
 import me.DMan16.TelePadtation.TelePadItems.TelePadItemPocket;
 import me.DMan16.TelePadtation.TelePadItems.TelePadItemStandard;
 import me.DMan16.TelePadtation.TelePadtationMain;
-import me.DMan16.TelePadtation.Utils.Utils;
+import me.DMan16.TelePadtation.Utils;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;

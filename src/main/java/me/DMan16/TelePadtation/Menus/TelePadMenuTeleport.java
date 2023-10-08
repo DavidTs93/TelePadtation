@@ -7,7 +7,7 @@ import me.DMan16.TelePadtation.Enums.SortType;
 import me.DMan16.TelePadtation.Enums.TelePadStatus;
 import me.DMan16.TelePadtation.TelePads.TelePad;
 import me.DMan16.TelePadtation.TelePadtationMain;
-import me.DMan16.TelePadtation.Utils.Utils;
+import me.DMan16.TelePadtation.Utils;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
@@ -26,8 +26,8 @@ public abstract class TelePadMenuTeleport<T extends TelePad> extends TelePadMenu
 	protected final @Nullable @Unmodifiable List<@NotNull @Unmodifiable Map<@NotNull Integer,@NotNull Pair<TelePad.@NotNull TelePadPlaceable,@NotNull TelePadStatus>>> destinationsGlobal;
 	private @NotNull SortType sortType;
 	
-	protected TelePadMenuTeleport(@NotNull T telePad,@Range(from = 1,to = 5) int lines,@NotNull String title,@NotNull Player player,@Nullable Runnable onCancel,@NotNull TelePadStatus status,@Nullable List<TelePad.@NotNull TelePadPlaceable> destinations) {
-		super(telePad,lines,title,player,onCancel,status);
+	protected TelePadMenuTeleport(@NotNull T telePad,@Range(from = 1,to = 5) int lines,@NotNull String title,@NotNull Player player,@NotNull TelePadStatus status,@Nullable List<TelePad.@NotNull TelePadPlaceable> destinations) {
+		super(telePad,lines,title,player,status);
 		List<Integer> slotsList = Arrays.asList(slotClose(),slotNext(),slotPrevious(),slotInfo(),slotSort());
 		Integer slotEdit = slotEdit();
 		if (slotEdit != null) {
@@ -43,8 +43,8 @@ public abstract class TelePadMenuTeleport<T extends TelePad> extends TelePadMenu
 			this.destinations = Collections.unmodifiableList(destinations);
 			List<Pair<TelePad.TelePadPlaceable,TelePadStatus>> dests = this.destinations.stream().map(t -> new Pair<>(t,t.status())).collect(Collectors.toList());
 			Comparator<Pair<TelePad.TelePadPlaceable,TelePadStatus>> comparator = createComparator(telePad);
-			Iterator<Pair<TelePad.TelePadPlaceable,TelePadStatus>> iterPrivate = dests.stream().filter(t -> t.second() != TelePadStatus.GLOBAL).sorted(comparator).iterator();
-			Iterator<Pair<TelePad.TelePadPlaceable,TelePadStatus>> iterGlobal = dests.stream().filter(t -> t.second() == TelePadStatus.GLOBAL).sorted(comparator).iterator();
+			Iterator<Pair<TelePad.TelePadPlaceable,TelePadStatus>> iterPrivate = dests.stream().filter(t -> t.first().isPrivate() && !telePad.equals(t.first())).sorted(comparator).iterator();
+			Iterator<Pair<TelePad.TelePadPlaceable,TelePadStatus>> iterGlobal = dests.stream().filter(t -> t.first().isGlobal() && !telePad.equals(t.first())).sorted(comparator).iterator();
 			this.destinationsPrivate = !iterPrivate.hasNext() ? null : Collections.unmodifiableList(Utils.generateCompactPages(iterPrivate,Utils::self,null,1,lines,0,8,this::isBorder,null).stream().map(Collections::unmodifiableMap).collect(Collectors.toList()));
 			this.destinationsGlobal = !iterGlobal.hasNext() ? null : Collections.unmodifiableList(Utils.generateCompactPages(iterGlobal,Utils::self,null,1,lines,0,8,this::isBorder,null).stream().map(Collections::unmodifiableMap).collect(Collectors.toList()));
 		}
@@ -170,9 +170,9 @@ public abstract class TelePadMenuTeleport<T extends TelePad> extends TelePadMenu
 	
 	protected void otherSlot(@NotNull InventoryClickEvent event,int slot,ItemStack slotItem,@NotNull ClickType click) {
 		if (slot == slotSort()) {
-			if (sortType == SortType.ALL) sortType = SortType.PRIVATE;
-			else if (sortType == SortType.PRIVATE) sortType = SortType.GLOBAL;
-			else sortType = SortType.ALL;
+			if (sortType == SortType.ALL) sortType = click.isRightClick() ? SortType.GLOBAL : SortType.PRIVATE;
+			else if (sortType == SortType.PRIVATE) sortType = click.isRightClick() ? SortType.ALL : SortType.GLOBAL;
+			else sortType = click.isRightClick() ? SortType.PRIVATE : SortType.ALL;
 			setPage(1);
 			return;
 		}

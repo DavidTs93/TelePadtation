@@ -10,12 +10,13 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 
 public final class TelePadMenuPortable extends TelePadMenuTeleport<TelePad.TelePadPortable> {
-	public TelePadMenuPortable(TelePad.@NotNull TelePadPortable telePad,@NotNull String title,@NotNull Player player,@Nullable Runnable onCancel,@Nullable List<TelePad.@NotNull TelePadPlaceable> destinations) {
-		super(telePad,5,title,player,onCancel,TelePadStatus.PORTABLE,destinations);
+	public TelePadMenuPortable(TelePad.@NotNull TelePadPortable telePad,@NotNull String title,@NotNull Player player,@Nullable List<TelePad.@NotNull TelePadPlaceable> destinations) {
+		super(telePad,5,title,player,TelePadStatus.PORTABLE,destinations);
+		
 		
 	}
-	public TelePadMenuPortable(TelePad.@NotNull TelePadPortable telePad,@NotNull Player player,@Nullable Runnable onCancel,@Nullable List<TelePad.@NotNull TelePadPlaceable> destinations) {
-		this(telePad,TelePadtationMain.languageManager().titleMenu(telePad,TelePadStatus.PORTABLE),player,onCancel,destinations);
+	public TelePadMenuPortable(TelePad.@NotNull TelePadPortable telePad,@NotNull Player player,@Nullable List<TelePad.@NotNull TelePadPlaceable> destinations) {
+		this(telePad,TelePadtationMain.languageManager().titleMenu(telePad),player,destinations);
 	}
 	
 	protected void handleEdit() {}

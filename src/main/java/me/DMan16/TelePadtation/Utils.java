@@ -1,6 +1,5 @@
-package me.DMan16.TelePadtation.Utils;
+package me.DMan16.TelePadtation;
 
-import me.DMan16.TelePadtation.TelePadtationMain;
 import net.md_5.bungee.api.ChatColor;
 import org.bukkit.*;
 import org.bukkit.entity.Player;
@@ -111,7 +110,7 @@ public class Utils {
 	@Nullable
 	@Contract("null -> null; !null -> !null")
 	public static String chatColors(@Nullable String str) {
-		return colors(unicode(str));
+		return unicode(colors(str));
 	}
 	
 	@Nullable
@@ -132,14 +131,16 @@ public class Utils {
 	}
 	
 	public static void log(@NotNull String str) {
-		Bukkit.getLogger().info(str);
+		Bukkit.getConsoleSender().sendMessage(str);
 	}
 	
 	public static void chatColorsLogPlugin(@NotNull String str) {
 		log(chatColorsPlugin(str));
 	}
 	
-	public static NamespacedKey namespacedKey(String name) {
+	@NotNull
+	@Contract("_ -> new")
+	public static NamespacedKey namespacedKey(@NotNull String name) {
 		return new NamespacedKey(TelePadtationMain.getInstance(),name);
 	}
 	
@@ -228,6 +229,10 @@ public class Utils {
 		Collection<ItemStack> leftovers = items;
 		if (player.isOnline() && !player.isDead()) leftovers = player.getInventory().addItem(items.stream().filter(Utils::notNull).toArray(ItemStack[]::new)).values();
 		if (!leftovers.isEmpty()) leftovers.forEach(item -> world.dropItemNaturally(loc,item));
+	}
+	
+	public static void givePlayer(@NotNull Player player,@NotNull World world,@NotNull Location loc,ItemStack item) {
+		givePlayer(player,world,loc,Collections.singletonList(item));
 	}
 	
 	@NotNull

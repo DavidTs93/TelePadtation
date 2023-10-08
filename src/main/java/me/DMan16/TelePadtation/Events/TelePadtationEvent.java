@@ -6,7 +6,7 @@ import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
 
 public abstract class TelePadtationEvent<V extends TelePad> extends Event {
-	private final HandlerList Handlers = new HandlerList();
+	private static final HandlerList HANDLERS = new HandlerList();
 	private final @NotNull V telePad;
 	
 	protected TelePadtationEvent(@NotNull V telePad) {
@@ -18,9 +18,12 @@ public abstract class TelePadtationEvent<V extends TelePad> extends Event {
 		return telePad;
 	}
 	
-	@Override
+	public static HandlerList getHandlerList() {
+		return HANDLERS;
+	}
+	
 	@NotNull
-	public HandlerList getHandlers() {
-		return Handlers;
+	public final HandlerList getHandlers() {
+		return HANDLERS;
 	}
 }

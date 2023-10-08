@@ -5,7 +5,7 @@ import me.DMan16.TelePadtation.Enums.Heads;
 import me.DMan16.TelePadtation.Enums.TelePadStatus;
 import me.DMan16.TelePadtation.TelePads.TelePad;
 import me.DMan16.TelePadtation.TelePadtationMain;
-import me.DMan16.TelePadtation.Utils.Utils;
+import me.DMan16.TelePadtation.Utils;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -15,6 +15,7 @@ import org.bukkit.inventory.meta.SkullMeta;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -47,7 +48,7 @@ public final class ConfigManager extends AbstractConfigManager {
 	private String skinIndividualObstructed;
 	private String skinIndividualInactive;
 	
-	public ConfigManager() {
+	public ConfigManager() throws IOException {
 		super(TelePadtationMain.getInstance());
 		this.headPocket = getSkin("telepad.display-head-pocket",Heads.PORTABLE,true);
 	}
@@ -76,7 +77,7 @@ public final class ConfigManager extends AbstractConfigManager {
 		this.destinationAllowInactive = config.getBoolean("telepad.destination.allow-inactive",false);
 		this.nameAsTitle = config.getBoolean("menu.name-as-title",true);
 		this.rightClickJump = Math.max(config.getInt("menu.right-click-jump",5),1);
-		this.skinEdit = getSkin("menu.display-head.general.global",Heads.EDIT,false);
+		this.skinEdit = getSkin("menu.display-head.edit",Heads.EDIT,false);
 		this.skinGeneralGlobal = getSkin("menu.display-head.general.global",Heads.GLOBAL,false);
 		this.skinGeneralPrivate = getSkin("menu.display-head.general.private",Heads.ACTIVE,false);
 		this.skinIndividualGlobal = getSkin("menu.display-head.individual.global",Heads.GLOBAL,true);
@@ -186,10 +187,11 @@ public final class ConfigManager extends AbstractConfigManager {
 	
 	@NotNull
 	public ItemStack itemMenu(@NotNull TelePad telePad,@NotNull TelePadStatus status) {
-		String name = Objects.requireNonNull(TelePadtationMain.TelePadsManager().get(telePad.type())).displayName();
+		String name;
+		if (!telePad.isGlobal() || (name = telePad.name()) == null) name = Objects.requireNonNull(TelePadtationMain.TelePadsManager().get(telePad.type())).displayName();
 		String skin;
-		if (status == TelePadStatus.PORTABLE) skin = ((TelePad.TelePadPortable) telePad).skin();
-		else if (status == TelePadStatus.GLOBAL) skin = skinIndividualGlobal;
+		if (telePad.isPortable()) skin = ((TelePad.TelePadPortable) telePad).skin();
+		else if (telePad.isGlobal()) skin = skinIndividualGlobal;
 		else if (status == TelePadStatus.ACTIVE) skin = skinIndividualActive;
 		else if (status == TelePadStatus.OBSTRUCTED) skin = skinIndividualObstructed;
 		else skin = skinIndividualInactive;

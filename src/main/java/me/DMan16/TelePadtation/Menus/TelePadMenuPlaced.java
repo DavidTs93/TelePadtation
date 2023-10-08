@@ -11,11 +11,11 @@ import java.util.List;
 
 public final class TelePadMenuPlaced extends TelePadMenuTeleport<TelePad.TelePadPlaceable> {
 	public TelePadMenuPlaced(TelePad.@NotNull TelePadPlaceable telePad,@NotNull String title,@NotNull Player player,@NotNull TelePadStatus status,@Nullable List<TelePad.@NotNull TelePadPlaceable> destinations) {
-		super(telePad,5,title,player,null,status,destinations);
+		super(telePad,5,title,player,status,destinations);
 	}
 	
 	public TelePadMenuPlaced(TelePad.@NotNull TelePadPlaceable telePad,@NotNull Player player,@NotNull TelePadStatus status,@Nullable List<TelePad.@NotNull TelePadPlaceable> destinations) {
-		this(telePad,TelePadtationMain.languageManager().titleMenu(telePad,status),player,status,destinations);
+		this(telePad,TelePadtationMain.languageManager().titleMenu(telePad),player,status,destinations);
 	}
 	
 	protected void handleEdit() {

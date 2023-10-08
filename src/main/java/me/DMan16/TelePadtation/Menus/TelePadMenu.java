@@ -5,7 +5,7 @@ import me.DMan16.TelePadtation.Events.TelePadPostRemoveEvent;
 import me.DMan16.TelePadtation.Interfaces.Backable;
 import me.DMan16.TelePadtation.TelePads.TelePad;
 import me.DMan16.TelePadtation.TelePadtationMain;
-import me.DMan16.TelePadtation.Utils.Utils;
+import me.DMan16.TelePadtation.Utils;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -13,9 +13,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.*;
 
 import java.util.Collections;
@@ -37,12 +35,11 @@ public abstract class TelePadMenu<T extends TelePad> extends ListenerInventory {
 	protected final @NotNull String title;
 	protected final @NotNull Player player;
 	protected final @NotNull TelePadStatus status;
-	protected final @Nullable Runnable onCancel;
 	protected final @NotNull @Unmodifiable Set<@NotNull Integer> borders;
 	protected final int rightClickJump;
 	protected int currentPage = 1;
 	
-	protected TelePadMenu(@NotNull T telePad,@Range(from = 1,to = 5) int lines,@NotNull String title,@NotNull Player player,@Nullable Runnable onCancel,@NotNull TelePadStatus status) {
+	protected TelePadMenu(@NotNull T telePad,@Range(from = 1,to = 5) int lines,@NotNull String title,@NotNull Player player,@NotNull TelePadStatus status) {
 		super(Bukkit.createInventory(player,(lines + 1) * LINE_SIZE,title),player.getUniqueId());
 		if (((telePad instanceof TelePad.TelePadPortable) && status != TelePadStatus.PORTABLE) || ((telePad instanceof TelePad.TelePadPlaceable) && ((telePad.isGlobal() && status != TelePadStatus.GLOBAL) || (!telePad.isActive() && status != TelePadStatus.INACTIVE))))
 			throw new IllegalArgumentException("TelePad status is incorrect!");
@@ -51,17 +48,16 @@ public abstract class TelePadMenu<T extends TelePad> extends ListenerInventory {
 		this.title = title;
 		this.player = player;
 		this.status = status;
-		this.onCancel = onCancel;
 		this.borders = Collections.unmodifiableSet(IntStream.range(0,size).filter(slot -> (slot >= 0 && slot < 9) || (slot >= size - 9 && slot < size) || (slot % 9) == 0 || ((slot + 1) % 9) == 0).boxed().collect(Collectors.toSet()));
 		this.rightClickJump = TelePadtationMain.configManager().rightClickJump();
 	}
 	
-	protected TelePadMenu(@NotNull T telePad,@Range(from = 1,to = 5) int lines,@NotNull String title,@NotNull Player player,@Nullable Runnable onCancel) {
-		this(telePad,lines,title,player,onCancel,telePad.status());
+	protected TelePadMenu(@NotNull T telePad,@Range(from = 1,to = 5) int lines,@NotNull String title,@NotNull Player player) {
+		this(telePad,lines,title,player,telePad.status());
 	}
 	
 	protected boolean canEditPrivate() {
-		return status != TelePadStatus.GLOBAL && telePad.isOwner(player);
+		return telePad.isPrivate() && telePad.isOwner(player);
 	}
 	
 	protected boolean testPermissionGlobal() {
@@ -73,7 +69,7 @@ public abstract class TelePadMenu<T extends TelePad> extends ListenerInventory {
 	}
 	
 	protected boolean canEdit() {
-		return status != TelePadStatus.PORTABLE && (canEditPrivate() || canEditGlobal());
+		return !telePad.isPortable() && (canEditPrivate() || canEditGlobal());
 	}
 	
 	protected void open() {
@@ -86,11 +82,6 @@ public abstract class TelePadMenu<T extends TelePad> extends ListenerInventory {
 	
 	protected boolean isBorder(int slot) {
 		return borders.contains(slot);
-	}
-	
-	@Override
-	protected void afterClose(@Nullable InventoryCloseEvent event) {
-		if (!isRegistered()) Utils.runNotNull(onCancel);
 	}
 	
 	@NotNull
@@ -144,8 +135,8 @@ public abstract class TelePadMenu<T extends TelePad> extends ListenerInventory {
 	}
 	
 	protected final void setNextPrevious() {
-		if (currentPage() < maxPage()) setItem(slotNext(),itemNext());
-		if (currentPage() > 1) setItem(slotPrevious(),itemPrevious());
+		setItem(slotNext(),currentPage() < maxPage() ? itemNext() : ITEM_BORDER);
+		setItem(slotPrevious(),currentPage() > 1 ? itemPrevious() : ITEM_BORDER);
 	}
 	
 	protected final void setClose() {
@@ -179,11 +170,7 @@ public abstract class TelePadMenu<T extends TelePad> extends ListenerInventory {
 	}
 	
 	protected void clickClose(@NotNull ClickType click) {
-		new BukkitRunnable() {
-			public void run() {
-				close();
-			}
-		}.runTaskLater(TelePadtationMain.getInstance(),1);
+		TelePadtationMain.taskChainFactory().newChain().delay(1).sync(this::close).execute();
 	}
 	
 	private int change(@NotNull ClickType click) {
@@ -281,12 +268,10 @@ public abstract class TelePadMenu<T extends TelePad> extends ListenerInventory {
 		if (!event.isCancelled() || click != ClickType.SWAP_OFFHAND) return;
 		ItemStack item = player.getInventory().getItemInOffHand();
 		ItemStack offHand = Utils.isNull(item) ? null : item;
-		new BukkitRunnable() {
-			public void run() {
-				player.getInventory().setItemInOffHand(AIR);
-				player.getInventory().setItemInOffHand(offHand);
-			}
-		}.runTask(TelePadtationMain.getInstance());
+		TelePadtationMain.taskChainFactory().newChain().sync(() -> {
+			player.getInventory().setItemInOffHand(AIR);
+			player.getInventory().setItemInOffHand(offHand);
+		}).execute();
 	}
 	
 	protected abstract void otherSlot(@NotNull InventoryClickEvent event,int slot,ItemStack slotItem,@NotNull ClickType click);

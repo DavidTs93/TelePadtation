@@ -15,6 +15,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.UUID;
 
 public class ListenerInventory implements Listener {
@@ -77,13 +78,13 @@ public class ListenerInventory implements Listener {
 		if (unregister == null) unregister = !this.cancelCloseUnregister;
 		if (unregister) {
 			unregister();
-			afterClose(null);
 		} else this.cancelCloseUnregister = true;
-		inventory.getViewers().forEach(HumanEntity::closeInventory);
+		new ArrayList<>(inventory.getViewers()).forEach(HumanEntity::closeInventory);
+		afterClose(null);
 	}
 	
 	public void close() {
-		close(true);
+		close(null);
 	}
 	
 	@Nullable

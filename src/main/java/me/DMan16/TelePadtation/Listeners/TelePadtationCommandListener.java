@@ -3,13 +3,14 @@ package me.DMan16.TelePadtation.Listeners;
 import me.DMan16.TelePadtation.TelePadItems.TelePadItem;
 import me.DMan16.TelePadtation.TelePads.TelePadCommand;
 import me.DMan16.TelePadtation.TelePadtationMain;
-import me.DMan16.TelePadtation.Utils.Utils;
+import me.DMan16.TelePadtation.Utils;
 import org.bukkit.Bukkit;
 import org.bukkit.command.*;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.EquipmentSlot;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -17,7 +18,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 public final class TelePadtationCommandListener implements CommandExecutor,TabCompleter {
-	private static final List<String> BASE = Arrays.asList("help","open","reload","give");
+	private static final List<String> BASE = Arrays.asList("help","open","reload","give","owned");
 	
 	private final PluginCommand command;
 	
@@ -30,7 +31,22 @@ public final class TelePadtationCommandListener implements CommandExecutor,TabCo
 	
 	public boolean onCommand(@NotNull CommandSender sender,@NotNull Command cmd,@NotNull String label,@NotNull String @NotNull [] args) {
 		int idx;
-		if (args.length == 0 || (idx = BASE.indexOf(Utils.toLowercase(args[0]))) == 1) {
+		boolean basic = args.length == 0 || !sender.hasPermission("telepadtation.command.*");
+		if (basic || (idx = BASE.indexOf(Utils.toLowercase(args[0]))) == 4) {
+			Player player;
+			if (basic || args.length == 1) {
+				if (!(sender instanceof Player)) {
+					TelePadtationMain.languageManager().playerOnly(sender);
+					return true;
+				}
+				player = (Player) sender;
+			} else player = Bukkit.getPlayer(args[1]);
+			if (player == null || !player.isOnline()) TelePadtationMain.languageManager().playerNotFound(sender,args[1]);
+			else TelePadtationMain.languageManager().ownedLimit(sender,player);
+			return true;
+		}
+		if (idx <= 0) return false;
+		if (idx == 1) {
 			if (!(sender instanceof Player)) {
 				TelePadtationMain.languageManager().playerOnly(sender);
 				return true;
@@ -39,13 +55,17 @@ public final class TelePadtationCommandListener implements CommandExecutor,TabCo
 			new TelePadCommand(player).access(player,EquipmentSlot.HAND);
 			return true;
 		}
-		if (idx <= 0) return false;
 		if (idx == 2) {
-			TelePadtationMain.configManager().reload();
-			TelePadtationMain.languageManager().reload();
-			this.command.setUsage(TelePadtationMain.languageManager().usage());
+			try {
+				TelePadtationMain.configManager().reload();
+			} catch (IOException e) {}
+			try {
+				TelePadtationMain.languageManager().reload();
+				this.command.setUsage(TelePadtationMain.languageManager().usage());
+			} catch (IOException e) {}
 			return true;
-		} if (idx == 3) {
+		}
+		if (idx == 3) {
 			if (args.length == 1) return false;
 			TelePadItem<?> telePadItem = TelePadtationMain.TelePadsManager().get(args[1]);
 			if (telePadItem == null) {
@@ -69,10 +89,17 @@ public final class TelePadtationCommandListener implements CommandExecutor,TabCo
 	
 	@NotNull
 	public List<String> onTabComplete(@NotNull CommandSender sender,@NotNull Command command,@NotNull String alias,@NotNull String @NotNull [] args) {
+		if (!sender.hasPermission("telepadtation.command.*")) return new ArrayList<>();
+		if (args.length > 3) return new ArrayList<>();
 		if (args.length == 0) return BASE;
 		if (args.length == 1) return BASE.stream().filter(name -> containsTabComplete(args[0],name)).collect(Collectors.toList());
 		int idx = BASE.indexOf(Utils.toLowercase(args[0]));
-		return idx == 3 ? TelePadtationMain.TelePadsManager().getTypes() : new ArrayList<>();
+		if (idx == 3) {
+			if (args.length == 2) return TelePadtationMain.TelePadsManager().getTypes().stream().filter(name -> containsTabComplete(args[1],name)).collect(Collectors.toList());
+			return Bukkit.getServer().getOnlinePlayers().stream().map(Player::getName).filter(name -> containsTabComplete(args[2],name)).collect(Collectors.toList());
+		}
+		if (idx == 4 && args.length == 2) return Bukkit.getServer().getOnlinePlayers().stream().map(Player::getName).filter(name -> containsTabComplete(args[1],name)).collect(Collectors.toList());
+		return new ArrayList<>();
 	}
 	
 	private static boolean containsTabComplete(String arg1,String arg2) {

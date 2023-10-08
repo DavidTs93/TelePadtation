@@ -2,7 +2,7 @@ package me.DMan16.TelePadtation.TelePadItems;
 
 import me.DMan16.TelePadtation.Classes.BlockLocation;
 import me.DMan16.TelePadtation.TelePads.TelePad;
-import me.DMan16.TelePadtation.Utils.Utils;
+import me.DMan16.TelePadtation.Utils;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;

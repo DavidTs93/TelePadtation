@@ -5,7 +5,7 @@ import me.DMan16.TelePadtation.Classes.TelePadInfoPlaceable;
 import me.DMan16.TelePadtation.Classes.TelePadInfoPortable;
 import me.DMan16.TelePadtation.TelePadItems.TelePadItem;
 import me.DMan16.TelePadtation.TelePads.TelePad;
-import me.DMan16.TelePadtation.Utils.Utils;
+import me.DMan16.TelePadtation.Utils;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.*;
 

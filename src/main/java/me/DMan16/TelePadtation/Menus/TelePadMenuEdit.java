@@ -1,5 +1,6 @@
 package me.DMan16.TelePadtation.Menus;
 
+import co.aikar.taskchain.TaskChain;
 import me.DMan16.TelePadtation.Classes.Pair;
 import me.DMan16.TelePadtation.Enums.Heads;
 import me.DMan16.TelePadtation.Enums.TelePadStatus;
@@ -8,7 +9,7 @@ import me.DMan16.TelePadtation.Events.TelePadPreRemoveEvent;
 import me.DMan16.TelePadtation.Interfaces.Backable;
 import me.DMan16.TelePadtation.TelePads.TelePad;
 import me.DMan16.TelePadtation.TelePadtationMain;
-import me.DMan16.TelePadtation.Utils.Utils;
+import me.DMan16.TelePadtation.Utils;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -16,22 +17,17 @@ import org.bukkit.conversations.ConversationContext;
 import org.bukkit.conversations.ConversationFactory;
 import org.bukkit.conversations.Prompt;
 import org.bukkit.entity.Player;
-import org.bukkit.event.inventory.ClickType;
-import org.bukkit.event.inventory.InventoryAction;
-import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.inventory.InventoryCloseEvent;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.inventory.*;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.SkullMeta;
-import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.scheduler.BukkitTask;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.*;
-import java.util.function.BiFunction;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.stream.IntStream;
 
 public final class TelePadMenuEdit extends TelePadMenu<TelePad.TelePadPlaceable> implements Backable {
@@ -45,14 +41,15 @@ public final class TelePadMenuEdit extends TelePadMenu<TelePad.TelePadPlaceable>
 	private boolean disabled;
 	
 	public TelePadMenuEdit(TelePad.@NotNull TelePadPlaceable telePad,@NotNull String title,@NotNull Player player,@NotNull TelePadStatus status,@Nullable List<TelePad.@NotNull TelePadPlaceable> destinations,@Nullable TelePadMenuTeleportOpener opener) throws IllegalAccessException {
-		super(telePad,4,title,player,null,status);
-		if (status == TelePadStatus.PORTABLE) throw new IllegalAccessException("Cannot edit Portable TelePads!");
+		super(telePad,4,title,player,status);
+		if (telePad.isPortable()) throw new IllegalAccessException("Cannot edit Portable TelePads!");
+		if ((telePad.isGlobal() && status != TelePadStatus.GLOBAL) || (!telePad.isActive() && status != TelePadStatus.INACTIVE)) throw new IllegalArgumentException("TelePad status is incorrect!");
 		if (!canEdit()) throw new IllegalAccessException("The player doesn't have editing access to the TelePad!");
 		this.destinations = destinations;
 		this.opener = opener;
-		this.isGlobal = status == TelePadStatus.GLOBAL;
+		this.isGlobal = telePad.isGlobal();
 		this.accessFuel = canEditPrivate() && !this.isGlobal;
-		this.changeGlobal = canEditPrivate() && testPermissionGlobal();
+		this.changeGlobal = telePad.isOwner(player) && testPermissionGlobal();
 		prepareAndOpen();
 	}
 	
@@ -89,7 +86,8 @@ public final class TelePadMenuEdit extends TelePadMenu<TelePad.TelePadPlaceable>
 	
 	@Nullable
 	public Integer slotFuelDisplayname() {
-		return accessFuel || changeGlobal ? 22 : null;
+		if (changeGlobal) return 22;
+		return accessFuel ? 20 : null;
 	}
 	
 	public int slotRemove() {
@@ -128,29 +126,49 @@ public final class TelePadMenuEdit extends TelePadMenu<TelePad.TelePadPlaceable>
 		return 1;
 	}
 	
-	@Override
-	protected void setUpdatingButtons() {
+	protected void setPageContents() {
 		Utils.runNotNull(slotGlobal(),slot -> setItem(slot,itemGlobal()));
 		Utils.runNotNull(slotFuelDisplayname(),slot -> setItem(slot,itemFuelDisplayname()));
 		setItem(slotRemove(),itemRemove());
-		super.setUpdatingButtons();
 	}
-	
-	protected void setPageContents() {}
 	
 	protected void otherSlot(@NotNull InventoryClickEvent event,int slot,ItemStack slotItem,@NotNull ClickType click) {
 		if (disabled) return;
 		if (slot == slotRemove()) new TelePadMenuConfirmRemove(this);
 		else if (Objects.equals(slot,slotFuelDisplayname())) {
 			if (accessFuel) new TelePadMenuFuel(this);
-			else {
-				cancelCloseUnregister = true;
-				startDisplaynameConversation();
-			}
-		} else if (Objects.equals(slot,slotGlobal())) telePad.toggleGlobal(player,this::setUpdatingButtons,limit -> TelePadtationMain.languageManager().limitReached(player,limit),() -> TelePadtationMain.languageManager().errorDatabase(player));
+			else startDisplaynameConversation();
+		} else if (Objects.equals(slot,slotGlobal())) {
+			disabled = true;
+			telePad.toggleGlobal(player,() -> {
+				TelePadStatus status = telePad.status();
+				String title = TelePadtationMain.languageManager().titleMenu(telePad);
+				if (status.isInactive()) try {
+					new TelePadMenuEdit(telePad,title,player,status,null,opener);
+				} catch (Exception e) {
+					close();
+				} else TelePadtationMain.databaseConnection().getApplicableTelePads(player,destinations -> {
+					try {
+						new TelePadMenuEdit(telePad,title,player,status,destinations,opener);
+					} catch (Exception e) {
+						close();
+					}
+				},() -> {
+					close();
+					TelePadtationMain.languageManager().errorDatabase(player);
+				});
+			},limit -> {
+				TelePadtationMain.languageManager().limitReached(player,limit);
+				disabled = false;
+			},() -> {
+				TelePadtationMain.languageManager().errorDatabase(player);
+				disabled = false;
+			});
+		}
 	}
 	
 	private void startDisplaynameConversation() {
+		cancelCloseUnregister = true;
 		new ConversationFactory(TelePadtationMain.getInstance()).withLocalEcho(false).withFirstPrompt(new Prompt() {
 			@NotNull
 			public String getPromptText(@NotNull ConversationContext context) {
@@ -163,20 +181,29 @@ public final class TelePadMenuEdit extends TelePadMenu<TelePad.TelePadPlaceable>
 			
 			@Nullable
 			public Prompt acceptInput(@NotNull ConversationContext context,@Nullable String input) {
-				if (!CANCEL.equalsIgnoreCase(input)) {
-					disabled = true;
-					telePad.setName(input,() -> {
-						setInfo();
-						disabled = false;
-					},() -> {
-						TelePadtationMain.languageManager().errorDatabase(player);
-						disabled = false;
-					});
+				if (CANCEL.equalsIgnoreCase(input)) {
+					cancelCloseUnregister = false;
 					open();
+					return END_OF_CONVERSATION;
 				}
+				disabled = true;
+				telePad.setName(input,() -> {
+					unregister();
+					TelePadtationMain.databaseConnection().getApplicableTelePads(player,destinations -> {
+						try {
+							new TelePadMenuEdit(telePad,TelePadtationMain.languageManager().titleMenu(telePad),player,status,destinations,opener);
+						} catch (IllegalAccessException e) {}
+					},() -> TelePadtationMain.languageManager().errorDatabase(player));
+				},() -> {
+					TelePadtationMain.languageManager().errorDatabase(player);
+					disabled = false;
+					cancelCloseUnregister = false;
+					open();
+				});
 				return END_OF_CONVERSATION;
 			}
-		}).buildConversation(player);
+		}).buildConversation(player).begin();
+		close();
 	}
 	
 	@FunctionalInterface
@@ -205,18 +232,18 @@ public final class TelePadMenuEdit extends TelePadMenu<TelePad.TelePadPlaceable>
 	
 	private static class TelePadMenuConfirmRemove extends TelePadMenu<TelePad.TelePadPlaceable> implements Backable {
 		private static final int SLOT_CONFIRM = 22;
-		private static final @NotNull List<@NotNull Pair<Integer,Integer>> SLOTS = Arrays.asList(new Pair<>(10,34),new Pair<>(11,33),new Pair<>(12,32),new Pair<>(13,31),new Pair<>(14,30),new Pair<>(15,29),new Pair<>(16,28),
+		private static final @NotNull List<@NotNull Pair<@NotNull Integer,@Nullable Integer>> SLOTS = Arrays.asList(new Pair<>(10,34),new Pair<>(11,33),new Pair<>(12,32),new Pair<>(13,31),new Pair<>(14,30),new Pair<>(15,29),new Pair<>(16,28),
 				new Pair<>(19,25),new Pair<>(20,24),new Pair<>(21,23),new Pair<>(SLOT_CONFIRM,null));
-		private static final @NotNull ItemStack WAIT = Utils.setDisplayNameLore(new ItemStack(Material.RED_STAINED_GLASS_PANE)," ",null);
+		private static final @NotNull ItemStack WAIT = Utils.setDisplayNameLore(new ItemStack(Material.GREEN_STAINED_GLASS_PANE)," ",null);
 		private static final @NotNull ItemStack READY = Utils.setDisplayNameLore(new ItemStack(Material.YELLOW_STAINED_GLASS_PANE)," ",null);
 		
 		private final @NotNull TelePadMenuEdit editMenu;
 		private boolean ready = false;
-		private BukkitTask task;
+		private TaskChain<?> task;
 		private boolean disabled;
 		
 		public TelePadMenuConfirmRemove(@NotNull TelePadMenuEdit editMenu) {
-			super(editMenu.telePad,4,editMenu.title,editMenu.player,null,editMenu.status);
+			super(editMenu.telePad,4,editMenu.title,editMenu.player,editMenu.status);
 			this.editMenu = editMenu;
 			prepareAndOpen();
 		}
@@ -224,28 +251,30 @@ public final class TelePadMenuEdit extends TelePadMenu<TelePad.TelePadPlaceable>
 		@Override
 		protected void open() {
 			super.open();
-			if (task != null) task.cancel();
-			task = new BukkitRunnable() {
-				private final Iterator<@NotNull Pair<Integer,Integer>> iter = SLOTS.iterator();
-				
-				public void run() {
-					if (!iter.hasNext()) {
-						cancel();
-						ready = true;
-						task = null;
-						return;
-					}
-					Pair<Integer,Integer> pair = iter.next();
-					ItemStack item = iter.hasNext() ? READY : Utils.setDisplayNameLore(new ItemStack(Material.GREEN_STAINED_GLASS_PANE),TelePadtationMain.languageManager().nameConfirm(),TelePadtationMain.languageManager().loreConfirm());
-					if (pair.first() != null) setItem(pair.first(),item);
+			if (task != null) try {
+				task.abortChain();
+			} catch (Exception e) {}
+			Iterator<Pair<Integer,Integer>> iter = SLOTS.iterator();
+			task = TelePadtationMain.taskChainFactory().newChain();
+			while (iter.hasNext()) {
+				Pair<Integer,Integer> pair = iter.next();
+				task.sync(() -> {
+					ItemStack item = pair.first() == SLOT_CONFIRM ? Utils.setDisplayNameLore(new ItemStack(Material.RED_STAINED_GLASS_PANE),TelePadtationMain.languageManager().nameConfirm(),TelePadtationMain.languageManager().loreConfirm()) : READY;
+					setItem(pair.first(),item);
 					if (pair.second() != null) setItem(pair.second(),item);
-				}
-			}.runTaskTimer(TelePadtationMain.getInstance(),0,2);
+				}).delay(2);
+			}
+			task.execute(() -> {
+				ready = true;
+				this.task = null;
+			});
 		}
 		
 		@Override
 		protected void afterClose(@Nullable InventoryCloseEvent event) {
-			if (task != null) task.cancel();
+			if (task != null) try {
+				task.abortChain();
+			} catch (Exception e) {}
 		}
 		
 		@Override
@@ -288,7 +317,7 @@ public final class TelePadMenuEdit extends TelePadMenu<TelePad.TelePadPlaceable>
 			TelePadtationMain.databaseConnection().remove(telePad,editMenu.accessFuel ? player : null,owned -> {
 				close();
 				telePad.location().toBlock().setType(Material.AIR);
-				if (status != TelePadStatus.GLOBAL) {
+				if (telePad.isPrivate()) {
 					List<ItemStack> items = fuelItems(telePad);
 					if (items != null) {
 						World world = telePad.location().world();
@@ -306,20 +335,20 @@ public final class TelePadMenuEdit extends TelePadMenu<TelePad.TelePadPlaceable>
 	}
 	
 	private static class TelePadMenuFuel extends TelePadMenu<TelePad.TelePadPlaceable> implements Backable {
-		private static final @NotNull List<@NotNull Integer> INNER_SLOTS = Arrays.asList(11,12,13,14,15);
+		private static final @NotNull List<@NotNull Integer> INNER_SLOTS = Arrays.asList(20,21,22,23,24);
 		
 		private final @NotNull TelePadMenuEdit editMenu;
 		private boolean disabled;
 		
 		public TelePadMenuFuel(@NotNull TelePadMenuEdit editMenu) {
-			super(editMenu.telePad,2,editMenu.title,editMenu.player,null,editMenu.status);
+			super(editMenu.telePad,4,editMenu.title,editMenu.player,editMenu.status);
 			this.editMenu = editMenu;
 			prepareAndOpen();
 		}
 		
 		@Override
 		protected boolean isBorder(int slot) {
-			return !INNER_SLOTS.contains(slot);
+			return legalSlot(slot) && !INNER_SLOTS.contains(slot);
 		}
 		
 		@Override
@@ -331,10 +360,15 @@ public final class TelePadMenuEdit extends TelePadMenu<TelePad.TelePadPlaceable>
 		}
 		
 		@Override
+		protected boolean cancelCheck(int slot,int inventorySlot,@NotNull ClickType click,@NotNull InventoryAction action,int hotbarSlot) {
+			return disabled || isBorder(slot);
+		}
+		
+		@Override
 		protected void setBorders() {
-			setItem(10,itemBorder());
-			setItem(16,itemBorder());
-			super.setBorders();
+			ItemStack border = itemBorder();
+			IntStream.range(0,size).filter(this::isBorder).forEach(slot -> setItem(slot,border));
+			setButtons();
 		}
 		
 		private void afterClose(@Nullable Consumer<@NotNull Boolean> run) {
@@ -359,23 +393,26 @@ public final class TelePadMenuEdit extends TelePadMenu<TelePad.TelePadPlaceable>
 		
 		public void goBack(@NotNull ClickType click) {
 			disabled = true;
-			BiFunction<@NotNull TelePadStatus,@Nullable List<TelePad.@NotNull TelePadPlaceable>,@NotNull Runnable> run = (status,destinations) -> click.isRightClick() && editMenu.opener != null ? () -> editMenu.goBack(click,status,destinations) : () -> {
-				try {
+			BiConsumer<TelePadStatus,List<TelePad.TelePadPlaceable>> run = (status,destinations) -> {
+				if (!click.isRightClick() || editMenu.opener == null) try {
 					new TelePadMenuEdit(telePad,title,player,status,destinations,editMenu.opener);
-				} catch (IllegalAccessException e) {}
+				} catch (IllegalAccessException e) {
+					e.printStackTrace();
+					close();
+				} else editMenu.goBack(click,status,destinations);
 			};
-			Runnable runRegular = () -> run.apply(status,editMenu.destinations);
-			Runnable runChangedInactive = () -> {
-				Function<@NotNull TelePadStatus,@NotNull Runnable> runStatus = status -> {
-					if (status.isInactive()) return runRegular;
-					return () -> TelePadtationMain.databaseConnection().getApplicableTelePads(player,destinations -> run.apply(status,destinations),() -> {
+			Consumer<TelePadStatus> runRegular = status -> run.accept(status,editMenu.destinations);
+			afterClose(changed -> {
+				if (changed && status == TelePadStatus.INACTIVE) telePad.recharge(() -> {
+					TelePadStatus status = telePad.status();
+					if (status.isInactive()) runRegular.accept(status);
+					else TelePadtationMain.databaseConnection().getApplicableTelePads(player,destinations -> run.accept(status,destinations),() -> {
 						close();
 						TelePadtationMain.languageManager().errorDatabase(player);
 					});
-				};
-				telePad.recharge(() -> runStatus.apply(telePad.status()),runRegular);
-			};
-			afterClose(changed -> (changed && status == TelePadStatus.INACTIVE ? runChangedInactive : runRegular).run());
+				},() -> runRegular.accept(telePad.status()));
+				else runRegular.accept(status);
+			});
 		}
 		
 		@NotNull
@@ -399,44 +436,36 @@ public final class TelePadMenuEdit extends TelePadMenu<TelePad.TelePadPlaceable>
 			while (iter.hasNext() && items.hasNext()) setItem(iter.next(),items.next());
 		}
 		
+		@Override
+		protected void emptyItem(@NotNull InventoryClickEvent event,int slot,@NotNull ClickType click,boolean isNull) {
+			InventoryAction action = event.getAction();
+			if (!INNER_SLOTS.contains(slot)) return;
+			if (action != InventoryAction.PLACE_ALL && action != InventoryAction.PLACE_ONE && action != InventoryAction.PLACE_SOME) return;
+			if (!telePad.isFuel(event.getCursor())) event.setCancelled(true);
+		}
+		
 		protected void otherSlot(@NotNull InventoryClickEvent event,int slot,ItemStack slotItem,@NotNull ClickType click) {
 			if (disabled) return;
 			InventoryAction action = event.getAction();
-			switch (action) {
-				case PLACE_ALL:
-				case PLACE_SOME:
-				case PLACE_ONE:
-				case SWAP_WITH_CURSOR:
-				case MOVE_TO_OTHER_INVENTORY:
-				case HOTBAR_SWAP:
-					break;
-				case NOTHING:
-				case PICKUP_ALL:
-				case PICKUP_SOME:
-				case PICKUP_HALF:
-				case PICKUP_ONE:
-				case DROP_ALL_CURSOR:
-				case DROP_ONE_CURSOR:
-				case DROP_ALL_SLOT:
-				case DROP_ONE_SLOT:
-				case HOTBAR_MOVE_AND_READD:
-				case CLONE_STACK:
-				case COLLECT_TO_CURSOR:
-				case UNKNOWN:
-					return;
-			}
 			if (action == InventoryAction.MOVE_TO_OTHER_INVENTORY) {
 				if (!legalSlot(slot) && !Utils.isNull(slotItem) && !telePad.isFuel(slotItem)) event.setCancelled(true);
 				return;
 			}
 			if (action == InventoryAction.HOTBAR_SWAP) {
-				if (legalSlot(slot)) {
+				if (INNER_SLOTS.contains(slot)) {
 					ItemStack item = click == ClickType.SWAP_OFFHAND ? player.getInventory().getItemInOffHand() : player.getInventory().getItem(event.getHotbarButton());
 					if (!Utils.isNull(item) && !telePad.isFuel(item)) event.setCancelled(true);
 				}
 				return;
 			}
-			if (!telePad.isFuel(slotItem)) event.setCancelled(true);
+			if (action == InventoryAction.SWAP_WITH_CURSOR) {
+				if (!telePad.isFuel(slotItem)) event.setCancelled(true);
+			}
+		}
+		
+		@EventHandler
+		public void onInventoryDrag(InventoryDragEvent event) {
+			if (equals(event) && event.getRawSlots().stream().anyMatch(INNER_SLOTS::contains) && !telePad.isFuel(event.getOldCursor())) event.setCancelled(true);
 		}
 	}
 }

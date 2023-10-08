@@ -39,7 +39,7 @@
 				</executions>
 				<configuration>
 					<finalName>${project.name}</finalName>
-					<outputDirectory>G:/Outputs</outputDirectory>
+					<outputDirectory>G:\Outputs</outputDirectory>
 				</configuration>
 			</plugin>
 			<plugin>
@@ -55,6 +55,12 @@
 							</excludes>
 						</filter>
 					</filters>
+					<relocations>
+						<relocation>
+							<pattern>org.bstats</pattern>
+							<shadedPattern>org.bStats</shadedPattern>
+						</relocation>
+					</relocations>
 					<createDependencyReducedPom>false</createDependencyReducedPom>
 				</configuration>
 				<executions>
@@ -123,7 +129,7 @@
 			<groupId>co.aikar</groupId>
 			<artifactId>taskchain-bukkit</artifactId>
 			<version>3.7.2</version>
-			<scope>provided</scope>
+			<scope>compile</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.bstats</groupId>

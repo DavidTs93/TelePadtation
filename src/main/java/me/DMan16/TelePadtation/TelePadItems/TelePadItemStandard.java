@@ -2,7 +2,7 @@ package me.DMan16.TelePadtation.TelePadItems;
 
 import me.DMan16.TelePadtation.TelePads.TelePadStandard;
 import me.DMan16.TelePadtation.TelePadtationMain;
-import me.DMan16.TelePadtation.Utils.Utils;
+import me.DMan16.TelePadtation.Utils;
 import org.bukkit.NamespacedKey;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;

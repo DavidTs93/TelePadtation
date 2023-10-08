@@ -3,7 +3,7 @@ package me.DMan16.TelePadtation.TelePadItems;
 import me.DMan16.TelePadtation.Enums.Heads;
 import me.DMan16.TelePadtation.TelePads.TelePadPocket;
 import me.DMan16.TelePadtation.TelePadtationMain;
-import me.DMan16.TelePadtation.Utils.Utils;
+import me.DMan16.TelePadtation.Utils;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.inventory.ItemStack;

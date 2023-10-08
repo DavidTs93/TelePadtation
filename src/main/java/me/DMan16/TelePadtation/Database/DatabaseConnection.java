@@ -1,4 +1,4 @@
-package me.DMan16.TelePadtation.Managers.Database;
+package me.DMan16.TelePadtation.Database;
 
 import co.aikar.taskchain.TaskChain;
 import co.aikar.taskchain.TaskChainAbortAction;
@@ -7,7 +7,7 @@ import com.zaxxer.hikari.HikariDataSource;
 import me.DMan16.TelePadtation.Classes.BlockLocation;
 import me.DMan16.TelePadtation.TelePads.TelePad;
 import me.DMan16.TelePadtation.TelePadtationMain;
-import me.DMan16.TelePadtation.Utils.Utils;
+import me.DMan16.TelePadtation.Utils;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
@@ -17,11 +17,11 @@ import org.jetbrains.annotations.Nullable;
 import java.sql.*;
 import java.util.*;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public abstract class DatabaseConnection {
+	protected static final String ERROR_MESSAGE = "Insertion failed: nearby TelePads detected";
 	protected static final String TRIGGER_NAME = "prevent_nearby_vertical_telepads";
 	
 	protected final @NotNull String table;
@@ -102,7 +102,7 @@ public abstract class DatabaseConnection {
 	}
 	
 	protected void createTableAndFixColumns(@NotNull DatabaseMetaData data,@NotNull Statement statement,@NotNull String table,@NotNull Collection<String> columns,@Nullable Collection<String> extra,String @NotNull ... indexes) throws SQLException {
-		createTable(statement,table,columns,extra,indexes);
+		createTable(statement,table,columns,extra);
 		fixColumns(data,statement,table,columns,indexes);
 	}
 	
@@ -127,36 +127,39 @@ public abstract class DatabaseConnection {
 		};
 	}
 	
-	private static <V> void execute(@NotNull TaskChain<Supplier<@Nullable V>> chain,@Nullable Consumer<@Nullable V> onSuccess,@Nullable Runnable onFail) {
-		chain = chain.abortIfNull(failAbort(onFail));
-		if (onSuccess == null) chain.execute();
-		else chain.syncLast(supplier -> onSuccess.accept(supplier.get())).execute();
-	}
+//	private static <V> void execute(@NotNull TaskChain<Supplier<@Nullable V>> chain,@Nullable Consumer<@Nullable V> onSuccess,@Nullable Runnable onFail) {
+//		chain = chain.abortIfNull(failAbort(onFail));
+//		if (onSuccess == null) chain.execute();
+//		else chain.syncLast(supplier -> onSuccess.accept(supplier.get())).execute();
+//	}
+//
+//	private static void execute(@NotNull TaskChain<@NotNull Boolean> chain,@Nullable Runnable onSuccess,@Nullable Runnable onFail) {
+//		chain = chain.abortIf(success -> !success,failAbort(onFail));
+//		if (onSuccess == null) chain.execute();
+//		else chain.syncLast(b -> onSuccess.run()).execute();
+//	}
 	
-	private static void execute(@NotNull TaskChain<@NotNull Boolean> chain,@Nullable Runnable onSuccess,@Nullable Runnable onFail) {
-		chain = chain.abortIf(Utils::self,failAbort(onFail));
-		if (onSuccess == null) chain.execute();
-		else chain.syncLast(b -> onSuccess.run()).execute();
-	}
-	
-	public final void add(@NotNull TelePad telePad,@Nullable Runnable onSuccess,@Nullable Runnable onFail) {
-		execute(TelePadtationMain.taskChainFactory().newChain().asyncFirst(() -> {
+	public final void add(@NotNull TelePad telePad,@Nullable Runnable onSuccess,@Nullable Runnable onFailConstraint,@Nullable Runnable onFailDatabase) {
+		TelePadtationMain.taskChainFactory().newChain().asyncFirst(() -> {
 			try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement("INSERT INTO " + table + " (World,X,Y,Z,OwnerID,Type) VALUES (?,?,?,?,?,?);")) {
 				setLocation(statement,telePad,1);
 				statement.setString(5,telePad.ownerID().toString());
 				statement.setString(6,telePad.type());
 				Utils.executeUpdateFailNoResults(statement);
 				return true;
-			} catch (SQLException e) {e.printStackTrace();}
-			return false;
-		}),onSuccess,onFail);
+			} catch (SQLException e) {
+				if (Utils.applyNotNull(e.getMessage(),msg -> Utils.toLowercase(msg).contains(Utils.toLowercase(ERROR_MESSAGE)))) return false;
+				e.printStackTrace();
+				return null;
+			}
+		}).abortIfNull(failAbort(onFailConstraint)).abortIfNot(Utils::self,failAbort(onFailDatabase)).syncLast(b -> Utils.runNotNull(onSuccess)).execute();
 	}
 	
 	/**
 	 * @param player if not null then the TelePad is owned by this player and is a private TelePad
 	 */
 	public final void remove(@NotNull TelePad telePad,@Nullable Player player,@Nullable Consumer<@Nullable Long> onSuccess,@Nullable Runnable onFail) {
-		execute(TelePadtationMain.taskChainFactory().newChain().asyncFirst(() -> {
+		TelePadtationMain.taskChainFactory().newChain().asyncFirst(() -> {
 			try (Connection connection = getConnection()) {
 				Long owned = player == null ? null : owned(connection,player);
 				try (PreparedStatement statement = connection.prepareStatement("DELETE FROM " + table + " WHERE World=? AND X=? AND Y=? AND Z=?;")) {
@@ -167,7 +170,7 @@ public abstract class DatabaseConnection {
 				}
 			} catch (SQLException e) {e.printStackTrace();}
 			return null;
-		}),onSuccess,onFail);
+		}).abortIfNull(failAbort(onFail)).syncLast(supplier -> Utils.runNotNull(onSuccess,run -> run.accept(supplier.get()))).execute();
 	}
 	
 	@Nullable
@@ -202,7 +205,7 @@ public abstract class DatabaseConnection {
 	}
 	
 	public final void getApplicableTelePads(@NotNull Player player,@NotNull Consumer<@Nullable List<TelePad.@NotNull TelePadPlaceable>> onSuccess,@Nullable Runnable onFail) {
-		execute(TelePadtationMain.taskChainFactory().newChain().asyncFirst(() -> {
+		TelePadtationMain.taskChainFactory().newChain().asyncFirst(() -> {
 			try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT * FROM " + table + " WHERE OwnerID=? OR Global=?;")) {
 				statement.setString(1,player.getUniqueId().toString());
 				statement.setBoolean(2,true);
@@ -216,11 +219,11 @@ public abstract class DatabaseConnection {
 						if (telePad == null || !telePad.canAccess(player)) continue;
 						telePads.add(telePad);
 					}
-					return Utils.supplier(telePads);
+					return telePads;
 				}
 			} catch (SQLException e) {e.printStackTrace();}
 			return null;
-		}),onSuccess,onFail);
+		}).abortIfNull(failAbort(onFail)).syncLast(telePads -> Utils.runNotNull(onSuccess,run -> run.accept(telePads))).execute();
 	}
 	
 	private long owned(@NotNull Connection connection,@NotNull Player player) throws SQLException {
@@ -246,10 +249,10 @@ public abstract class DatabaseConnection {
 				statement.setInt(1,newUsed);
 				setLocation(statement,telePad,2);
 				Utils.executeUpdateFailNoResults(statement);
-				Utils.runNotNull(onSuccess);
+				return onSuccess;
 			} catch (SQLException e) {e.printStackTrace();}
 			return null;
-		}).execute();
+		}).abortIfNull().syncLast(Runnable::run).execute();
 	}
 	
 	public final void setGlobal(@NotNull TelePad telePad,@NotNull Player player,boolean newIsGlobal,@Nullable Runnable onSuccess,@Nullable Consumer<@NotNull Long> onFailLimit,@Nullable Runnable onFailDatabase) {
@@ -267,13 +270,13 @@ public abstract class DatabaseConnection {
 					statement.setBoolean(1,newIsGlobal);
 					setLocation(statement,telePad,2);
 					Utils.executeUpdateFailNoResults(statement);
-					Utils.runNotNull(onSuccess);
+					return onSuccess;
 				}
 			} catch (SQLException e) {
 				Utils.runNotNull(onFailDatabase);
 			}
 			return null;
-		}).execute();
+		}).abortIfNull().syncLast(Runnable::run).execute();
 	}
 	
 	public final void setName(@NotNull TelePad telePad,@Nullable String newName,@Nullable Runnable onSuccess,@Nullable Runnable onFail) {
@@ -282,12 +285,12 @@ public abstract class DatabaseConnection {
 				statement.setString(1,newName);
 				setLocation(statement,telePad,2);
 				Utils.executeUpdateFailNoResults(statement);
-				Utils.runNotNull(onSuccess);
+				return onSuccess;
 			} catch (SQLException e) {
 				Utils.runNotNull(onFail);
 			}
 			return null;
-		}).execute();
+		}).abortIfNull().syncLast(Runnable::run).execute();
 	}
 	
 	public final void setExtraFuel(@NotNull TelePad telePad,int newExtraFuel,@Nullable Runnable onSuccess,@Nullable Runnable onFail) {
@@ -296,12 +299,12 @@ public abstract class DatabaseConnection {
 				statement.setInt(1,newExtraFuel);
 				setLocation(statement,telePad,2);
 				Utils.executeUpdateFailNoResults(statement);
-				Utils.runNotNull(onSuccess);
+				return onSuccess;
 			} catch (SQLException e) {
 				Utils.runNotNull(onFail);
 			}
 			return null;
-		}).execute();
+		}).abortIfNull().syncLast(Runnable::run).execute();
 	}
 	
 	public final void recharge(@NotNull TelePad telePad,int newUsed,int newExtraFuel,@Nullable Runnable onSuccess,@Nullable Runnable onFail) {
@@ -311,41 +314,43 @@ public abstract class DatabaseConnection {
 				statement.setInt(2,newExtraFuel);
 				setLocation(statement,telePad,3);
 				Utils.executeUpdateFailNoResults(statement);
-				Utils.runNotNull(onSuccess);
+				return onSuccess;
 			} catch (SQLException e) {
 				e.printStackTrace();
 				Utils.runNotNull(onFail);
 			}
 			return null;
-		}).execute();
+		}).abortIfNull().syncLast(Runnable::run).execute();
 	}
 	
-	public final void loadWorld(@NotNull World world) {
+	public final void fixWorld(@NotNull World world) {
 		TelePadtationMain.taskChainFactory().newChain().asyncFirst(() -> {
-			try (Connection connection = getConnection()) {
-				List<TelePad.TelePadPlaceable> telePads = new ArrayList<>();
-				try (PreparedStatement statement = connection.prepareStatement("SELECT * FROM " + table + " WHERE World=?;")) {
-					statement.setString(1,world.getName());
-					try (ResultSet results = statement.executeQuery()) {
-						while (results.next()) {
-							try {
-								TelePad.TelePadPlaceable telePad = getTelePad(results,world);
-								if (telePad != null) telePads.add(telePad);
-							} catch (SQLException e) {e.printStackTrace();}
-						}
+			try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT * FROM " + table + " WHERE World=?;")) {
+				statement.setString(1,world.getName());
+				try (ResultSet results = statement.executeQuery()) {
+					List<TelePad.TelePadPlaceable> telePads = new ArrayList<>();
+					while (results.next()) {
+						try {
+							TelePad.TelePadPlaceable telePad = getTelePad(results,world);
+							if (telePad != null) telePads.add(telePad);
+						} catch (SQLException e) {e.printStackTrace();}
 					}
-				}
-				telePads = TelePadtationMain.configManager().fixOrShouldRemove(telePads);
-				if (!telePads.isEmpty()) try (PreparedStatement statement = connection.prepareStatement("DELETE FROM " + table + " WHERE World=? AND X=? AND Y=? AND Z=?;")) {
-					for (TelePad telePad : telePads) {
-						setLocation(statement,telePad,1);
-						statement.addBatch();
-					}
-					int removed = statement.executeBatch().length;
-					if (removed != telePads.size()) throw new SQLException("While loading world \"" + world.getName() + "\", " + removed + " TelePads were removed, but " + telePads.size() + " were supposed to be removed (" + removed + "/" + telePads.size() + ")");
+					return telePads;
 				}
 			} catch (SQLException e) {e.printStackTrace();}
 			return null;
+		}).abortIfNull().sync(telePads -> {
+			telePads = TelePadtationMain.configManager().fixOrShouldRemove(telePads);
+			return telePads.isEmpty() ? null : telePads;
+		}).abortIfNull().asyncLast(telePads -> {
+			try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement("DELETE FROM " + table + " WHERE World=? AND X=? AND Y=? AND Z=?;")) {
+				for (TelePad telePad : telePads) {
+					setLocation(statement,telePad,1);
+					statement.addBatch();
+				}
+				int removed = statement.executeBatch().length;
+				if (removed != telePads.size()) throw new SQLException("While fixing world \"" + world.getName() + "\", " + removed + " TelePads were removed, but " + telePads.size() + " were supposed to be removed (" + removed + "/" + telePads.size() + ")");
+			} catch (SQLException e) {e.printStackTrace();}
 		}).execute();
 	}
 }

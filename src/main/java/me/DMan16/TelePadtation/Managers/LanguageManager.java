@@ -8,20 +8,21 @@ import me.DMan16.TelePadtation.Enums.TelePadStatus;
 import me.DMan16.TelePadtation.TelePadItems.TelePadItem;
 import me.DMan16.TelePadtation.TelePads.TelePad;
 import me.DMan16.TelePadtation.TelePadtationMain;
-import me.DMan16.TelePadtation.Utils.Utils;
+import me.DMan16.TelePadtation.Utils;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.IOException;
+import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public final class LanguageManager extends AbstractConfigManager {
 	private static final @NotNull String INFINITY = "\u221e";
-	private static final @NotNull String DEFAULT_TITLE = "&bTele&6Pad&btation";
-	private static final @NotNull String DEFAULT_NAME_SUFFIX = " &bTele&6Pad";
 	private static final @NotNull String PLACEHOLDER_STATUS = "<status>";
 	private static final @NotNull String PLACEHOLDER_WORLD = "<world>";
 	private static final @NotNull String PLACEHOLDER_COORDINATES = "<coordinates>";
@@ -36,7 +37,6 @@ public final class LanguageManager extends AbstractConfigManager {
 	private static final @NotNull String PLACEHOLDER_PAGES = "<pages>";
 	private static final @NotNull String PLACEHOLDER_TYPE = "<type>";
 	private static final @NotNull String PLACEHOLDER_PLAYER = "<player>";
-	private final @NotNull String DEFAULT_ENTER_DISPLAYNAME = join(Arrays.asList("&6Enter TelePad's new displayname","&6Enter \"&ecancel&6\" to cancel the change"));
 	
 	private final @NotNull String nameTelePadBasic;
 	private final @NotNull String nameTelePadStandard;
@@ -85,6 +85,7 @@ public final class LanguageManager extends AbstractConfigManager {
 	private String nameConfirm;
 	private List<@NotNull String> loreConfirm;
 	private String limitReached;
+	private String nearbyError;
 	private String telePadCreated;
 	private String telePadRemovedPrivate;
 	private String telePadRemovedGlobal;
@@ -93,17 +94,19 @@ public final class LanguageManager extends AbstractConfigManager {
 	private String errorDatabase;
 	private String usage;
 	private String playerOnly;
+	private String typeNotFound;
 	private String playerNotFound;
 	private String playerGive;
 	private String playerFullInventory;
-	private String typeNotFound;
+	private String ownedLimitSelf;
+	private String ownedLimitOther;
 	
-	public LanguageManager() {
+	public LanguageManager() throws IOException {
 		super(TelePadtationMain.getInstance(),"messages.yml");
-		this.nameTelePadBasic = getString("telepad.name.basic","&fBasic" + DEFAULT_NAME_SUFFIX);
-		this.nameTelePadStandard = getString("telepad.name.standard","&aStandard" + DEFAULT_NAME_SUFFIX);
-		this.nameTelePadAdvanced = getString("telepad.name.advanced",Utils.PURPLE + "Advanced" + DEFAULT_NAME_SUFFIX);
-		this.nameTelePadPocket = getString("telepad.name.pocket","&ePocket" + DEFAULT_NAME_SUFFIX);
+		this.nameTelePadBasic = getString("telepad.name.basic");
+		this.nameTelePadStandard = getString("telepad.name.standard");
+		this.nameTelePadAdvanced = getString("telepad.name.advanced");
+		this.nameTelePadPocket = getString("telepad.name.pocket");
 		this.loreTelePadBasic = getLines("telepad.lore.basic");
 		this.loreTelePadStandard = getLines("telepad.lore.standard");
 		this.loreTelePadAdvanced = getLines("telepad.lore.advanced");
@@ -111,59 +114,70 @@ public final class LanguageManager extends AbstractConfigManager {
 	}
 	
 	protected void load() {
-		this.titlePortable = getString("menu.title.portable",DEFAULT_TITLE);
-		this.titleGlobal = getString("menu.title.global",DEFAULT_TITLE);
-		this.titlePrivate = getString("menu.title.private",DEFAULT_TITLE);
-		this.statusGlobal = getString("menu.telepad.status.global","&9GLOBAL");
-		this.statusPortable = getString("menu.telepad.status.portable","&bPORTABLE");
-		this.statusActive = getString("menu.telepad.status.active","&aACTIVE");
-		this.statusInactive = getString("menu.telepad.status.inactive","&cINACTIVE");
-		this.statusObstructed = getString("menu.telepad.status.obstructed","&6OBSTRUCTED");
+		this.titlePortable = getString("menu.title.portable");
+		this.titleGlobal = getString("menu.title.global");
+		this.titlePrivate = getString("menu.title.private");
+		this.statusGlobal = getString("menu.telepad.status.global");
+		this.statusPortable = getString("menu.telepad.status.portable");
+		this.statusActive = getString("menu.telepad.status.active");
+		this.statusInactive = getString("menu.telepad.status.inactive");
+		this.statusObstructed = getString("menu.telepad.status.obstructed");
 		this.loreGlobal = addOrSetLine(getLines("menu.telepad.lore.global"),PLACEHOLDER_STATUS);
 		this.lorePortable = addOrSetLine(getLines("menu.telepad.lore.portable"),PLACEHOLDER_STATUS);
 		this.lorePrivate = addOrSetLine(getLines("menu.telepad.lore.private"),PLACEHOLDER_STATUS);
-		this.nameClose = getString("menu.button.close","&cClose");
-		this.nameBack = getString("menu.button.back.name","&fBack");
+		this.nameClose = getString("menu.button.close");
+		this.nameBack = getString("menu.button.back.name");
 		this.loreBack = getLines("menu.button.back.lore");
-		this.nameEdit = getString("menu.button.edit.name","&fEdit &bTele&6Pad");
+		this.nameEdit = getString("menu.button.edit.name");
 		this.loreEdit = getLines("menu.button.edit.lore");
-		this.nameNext = getString("menu.button.next.name","&fNext page");
+		this.nameNext = getString("menu.button.next.name");
 		this.loreNext = getLines("menu.button.next.lore");
-		this.namePrevious = getString("menu.button.previous.name","&fPrevious page");
+		this.namePrevious = getString("menu.button.previous.name");
 		this.lorePrevious = getLines("menu.button.previous.lore");
-		this.nameSortAll = getString("menu.button.sort.name.all","&fAll");
-		this.nameSortPrivate = getString("menu.button.sort.name.private","&aPrivate");
-		this.nameSortGlobal = getString("menu.button.sort.name.global","&9Global");
+		this.nameSortAll = getString("menu.button.sort.name.all");
+		this.nameSortPrivate = getString("menu.button.sort.name.private");
+		this.nameSortGlobal = getString("menu.button.sort.name.global");
 		this.loreSortAll = getLines("menu.button.sort.lore.all");
 		this.loreSortPrivate = getLines("menu.button.sort.lore.private");
 		this.loreSortGlobal = getLines("menu.button.sort.lore.global");
-		this.nameChangePrivate = getString("menu.button.change-type.name.private","&aPrivate");
-		this.nameChangeGlobal = getString("menu.button.change-type.name.global","&9Global");
+		this.nameChangePrivate = getString("menu.button.change-type.name.private");
+		this.nameChangeGlobal = getString("menu.button.change-type.name.global");
 		this.loreChangePrivate = getLines("menu.button.change-type.lore.private");
 		this.loreChangeGlobal = getLines("menu.button.change-type.lore.global");
-		this.nameFuel = getString("menu.button.fuel.name","&3Fuel");
+		this.nameFuel = getString("menu.button.fuel.name");
 		this.loreFuel = getLines("menu.button.fuel.lore");
-		this.nameDisplayname = getString("menu.button.displayname.name","&bDisplayname");
+		this.nameDisplayname = getString("menu.button.displayname.name");
 		this.loreDisplayname = getLines("menu.button.displayname.lore");
-		this.nameRemove = getString("menu.button.remove.name","&cRemove");
+		this.nameRemove = getString("menu.button.remove.name");
 		this.loreRemove = getLines("menu.button.remove.lore");
-		this.nameConfirm = getString("menu.button.confirm.name","&cRemove");
+		this.nameConfirm = getString("menu.button.confirm.name");
 		this.loreConfirm = getLines("menu.button.confirm.lore");
 		this.limitReached = join(getLines("message.limit-reached"));
+		this.nearbyError = join(getLines("message.nearby-error"));
 		this.telePadCreated = join(getLines("message.telepad-created"));
 		this.telePadRemovedPrivate = join(getLines("message.telepad-removed.private"));
 		this.telePadRemovedGlobal = join(getLines("message.telepad-removed.global"));
 		this.telePadRemovedOther = join(getLines("message.telepad-removed.other"));
 		this.enterDisplayname = join(getLines("message.enter-displayname"));
-		if (Utils.isNullOrEmpty(this.enterDisplayname)) this.enterDisplayname = DEFAULT_ENTER_DISPLAYNAME;
+		if (Utils.isNullOrEmpty(this.enterDisplayname)) this.enterDisplayname = join(getDefaultLines("message.enter-displayname"));
 		this.errorDatabase = join(getLines("message.error-database"));
 		this.usage = join(getLines("message.usage"));
 		if (this.usage == null) this.usage = "";
 		this.playerOnly = join(getLines("message.player-only"));
+		this.typeNotFound = join(getLines("message.type-not-found"));
 		this.playerNotFound = join(getLines("message.player-not-found"));
 		this.playerGive = join(getLines("message.player-give"));
 		this.playerFullInventory = join(getLines("message.player-full-inventory"));
-		this.typeNotFound = join(getLines("message.type-not-found"));
+		this.ownedLimitSelf = join(getLines("message.owned-limit.self"));
+		if (Utils.isNullOrEmpty(this.ownedLimitSelf)) this.ownedLimitSelf = join(getDefaultLines("message.owned-limit.self"));
+		this.ownedLimitOther = join(getLines("message.owned-limit.self.other"));
+		if (Utils.isNullOrEmpty(this.ownedLimitOther)) this.ownedLimitOther = join(getDefaultLines("message.owned-limit.other"));
+	}
+	
+	@Nullable
+	private List<@NotNull String> getDefaultLines(@NotNull String option) {
+		List<?> list = defaults().getList(option);
+		return list == null ? Utils.applyNotNull(Utils.applyNotNull(defaults().getString(option),Utils::chatColors),Collections::singletonList) : (list.isEmpty() ? null : Utils.chatColors(list.stream().map(line -> line == null ? "" : line.toString()).collect(Collectors.toList())));
 	}
 	
 	@NotNull
@@ -207,12 +221,11 @@ public final class LanguageManager extends AbstractConfigManager {
 	}
 	
 	@NotNull
-	public String titleMenu(@NotNull TelePad telePad,@NotNull TelePadStatus status) {
-		if (status == TelePadStatus.PORTABLE) return titlePortable;
-		if (status != TelePadStatus.GLOBAL) return titlePrivate;
-		if (!TelePadtationMain.configManager().nameAsTitle()) return titleGlobal;
-		String title = telePad.name();
-		return title == null ? titleGlobal : title;
+	public String titleMenu(@NotNull TelePad telePad) {
+		if (telePad.isPortable()) return titlePortable;
+		if (telePad.isPrivate()) return titlePrivate;
+		String title;
+		return !TelePadtationMain.configManager().nameAsTitle() || (title = telePad.name()) == null ? titleGlobal : title;
 	}
 	
 	@NotNull
@@ -220,12 +233,12 @@ public final class LanguageManager extends AbstractConfigManager {
 		BlockLocation location = telePad.location();
 		String coords = "(" + location.x() + "," + location.y() + "," + location.z() + ")";
 		String statusText;
-		if (status == TelePadStatus.PORTABLE) statusText = statusPortable;
-		else if (status == TelePadStatus.GLOBAL) statusText = statusGlobal;
+		if (telePad.isPortable()) statusText = statusPortable;
+		else if (telePad.isGlobal()) statusText = statusGlobal;
 		else if (status == TelePadStatus.ACTIVE) statusText = statusActive;
 		else if (status == TelePadStatus.OBSTRUCTED) statusText = statusObstructed;
 		else statusText = statusInactive;
-		return replace(status == TelePadStatus.PORTABLE ? lorePortable : (status == TelePadStatus.GLOBAL ? loreGlobal : lorePrivate),
+		return replace(telePad.isPortable() ? lorePortable : (telePad.isGlobal() ? loreGlobal : lorePrivate),
 				new Pair<>(PLACEHOLDER_STATUS,statusText),
 				new Pair<>(PLACEHOLDER_WORLD,location.world().getName()),
 				new Pair<>(PLACEHOLDER_COORDINATES,coords),
@@ -233,8 +246,8 @@ public final class LanguageManager extends AbstractConfigManager {
 				new Pair<>(PLACEHOLDER_X,location.x()),
 				new Pair<>(PLACEHOLDER_Y,location.y()),
 				new Pair<>(PLACEHOLDER_Z,location.z()),
-				new Pair<>(PLACEHOLDER_USES_MAX,status == TelePadStatus.GLOBAL ? INFINITY : telePad.usesMax()),
-				new Pair<>(PLACEHOLDER_USES_LEFT,status == TelePadStatus.GLOBAL ? INFINITY : telePad.usesLeft())
+				new Pair<>(PLACEHOLDER_USES_MAX,telePad.isGlobal() ? INFINITY : telePad.usesMax()),
+				new Pair<>(PLACEHOLDER_USES_LEFT,telePad.isGlobal() ? INFINITY : telePad.usesLeft())
 		);
 	}
 	
@@ -307,7 +320,11 @@ public final class LanguageManager extends AbstractConfigManager {
 		if (limitReached != null) player.sendMessage(replace(limitReached,new Pair<>(PLACEHOLDER_LIMIT,limit)));
 	}
 	
-	private void telePadAction(@Nullable String msg,@NotNull Player player,@NotNull TelePad telePad,@Nullable Long owned,@Nullable Long limit) {
+	public void nearbyError(@NotNull Player player) {
+		Utils.runNotNull(nearbyError,player::sendMessage);
+	}
+	
+	private void telePadAction(@Nullable String msg,@NotNull Player player,@NotNull TelePad telePad,@Nullable Long owned,@Nullable Long limit,boolean uses) {
 		if (msg == null) return;
 		BlockLocation location = telePad.location();
 		String coords = "(" + location.x() + "," + location.y() + "," + location.z() + ")";
@@ -321,15 +338,16 @@ public final class LanguageManager extends AbstractConfigManager {
 		);
 		if (owned != null) msg = replace(msg,new Pair<>(PLACEHOLDER_OWNED,owned));
 		if (limit != null) msg = replace(msg,new Pair<>(PLACEHOLDER_LIMIT,limit));
+		if (uses) msg = replace(msg,new Pair<>(PLACEHOLDER_USES_MAX,telePad.usesMax()));
 		player.sendMessage(msg);
 	}
 	
 	public void telePadCreated(@NotNull Player player,@NotNull TelePad telePad,long owned,long limit) {
-		telePadAction(telePadCreated,player,telePad,owned,limit);
+		telePadAction(telePadCreated,player,telePad,owned,limit,true);
 	}
 	
 	public void telePadRemoved(@NotNull Player player,@NotNull TelePad telePad,@Nullable Pair<@NotNull Long,@NotNull Long> info) {
-		telePadAction(info == null ? (telePad.isGlobal() ? telePadRemovedGlobal : telePadRemovedOther) : telePadRemovedPrivate,player,telePad,Utils.applyNotNull(info,Pair::first),Utils.applyNotNull(info,Pair::second));
+		telePadAction(info == null ? (telePad.isGlobal() ? telePadRemovedGlobal : telePadRemovedOther) : telePadRemovedPrivate,player,telePad,Utils.applyNotNull(info,Pair::first),Utils.applyNotNull(info,Pair::second),false);
 	}
 	
 	@NotNull
@@ -404,5 +422,20 @@ public final class LanguageManager extends AbstractConfigManager {
 	
 	public void playerFullInventory(@NotNull CommandSender sender,@NotNull String player,@NotNull TelePadItem<?> telePadItem) {
 		if (playerFullInventory != null) sender.sendMessage(replace(playerFullInventory,new Pair<>(PLACEHOLDER_PLAYER,player),new Pair<>(PLACEHOLDER_TYPE,telePadItem.type())));
+	}
+	
+	public void ownedLimit(@NotNull CommandSender sender,@NotNull Player player) {
+		boolean self = (sender instanceof Player) && ((Player) sender).getUniqueId().equals(player.getUniqueId());
+		long owned;
+		try {
+			owned = TelePadtationMain.databaseConnection().owned(player);
+		} catch (SQLException e) {
+			errorDatabase(player);
+			return;
+		}
+		long limit = TelePadtationMain.configManager().limit(player);
+		String msg = replace(self ? ownedLimitSelf : ownedLimitOther,new Pair<>(PLACEHOLDER_OWNED,owned),new Pair<>(PLACEHOLDER_LIMIT,limit));
+		if (!self) msg = replace(msg,new Pair<>(PLACEHOLDER_PLAYER,player.getName()));
+		sender.sendMessage(msg);
 	}
 }
